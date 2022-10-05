@@ -792,6 +792,8 @@ func (cfg *HTTPProxyConf) CheckForSvr(serverCfg ServerCommonConf) (err error) {
 		return fmt.Errorf("type [http] not support when vhost_http_port is not set")
 	}
 
+	cfg.SubDomain = cfg.ProxyName
+
 	if err = cfg.DomainConf.checkForSvr(serverCfg); err != nil {
 		err = fmt.Errorf("proxy [%s] domain conf check error: %v", cfg.ProxyName, err)
 		return

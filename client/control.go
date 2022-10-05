@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/fatedier/golib/control/shutdown"
-	"github.com/fatedier/golib/crypto"
 	libdial "github.com/fatedier/golib/net/dial"
 	fmux "github.com/hashicorp/yamux"
 
@@ -280,9 +279,9 @@ func (ctl *Control) reader() {
 	defer ctl.readerShutdown.Done()
 	defer close(ctl.closedCh)
 
-	encReader := crypto.NewReader(ctl.conn, []byte(ctl.clientCfg.Token))
+	//encReader := crypto.NewReader(ctl.conn, []byte(ctl.clientCfg.Token))
 	for {
-		m, err := msg.ReadMsg(encReader)
+		m, err := msg.ReadMsg(ctl.conn)
 		if err != nil {
 			if err == io.EOF {
 				xl.Debug("read from control connection EOF")
@@ -300,12 +299,12 @@ func (ctl *Control) reader() {
 func (ctl *Control) writer() {
 	xl := ctl.xl
 	defer ctl.writerShutdown.Done()
-	encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.clientCfg.Token))
-	if err != nil {
-		xl.Error("crypto new writer error: %v", err)
-		ctl.conn.Close()
-		return
-	}
+	//encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.clientCfg.Token))
+	//if err != nil {
+	//	xl.Error("crypto new writer error: %v", err)
+	//	ctl.conn.Close()
+	//	return
+	//}
 	for {
 		m, ok := <-ctl.sendCh
 		if !ok {
@@ -313,7 +312,7 @@ func (ctl *Control) writer() {
 			return
 		}
 
-		if err := msg.WriteMsg(encWriter, m); err != nil {
+		if err := msg.WriteMsg(ctl.conn, m); err != nil {
 			xl.Warn("write message to control connection error: %v", err)
 			return
 		}
