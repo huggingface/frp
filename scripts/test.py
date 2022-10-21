@@ -9,4 +9,4 @@ def hello_world():
 if __name__ == '__main__':
     # run() method of Flask class runs the application
     # on the local development server.
-    app.run(port=7000)
+    app.run(host='0.0.0.0', port=80)

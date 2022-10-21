@@ -1,1 +1,1 @@
-docker run -d -p 15000:15000 -p 7500:7500 frps
+docker run -d --network host -v ~/frp/scripts:/etc/frp frps -c /etc/frp/frps.ini
