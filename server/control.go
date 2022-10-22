@@ -449,7 +449,7 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					m.ProxyName = uuid.NewString()
+					m.ProxyName = uuid.NewString()[:18]
 					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 
