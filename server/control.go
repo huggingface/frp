@@ -17,7 +17,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
+	"github.com/fatedier/golib/crypto"
 	"io"
 	"net"
 	"runtime/debug"
@@ -294,12 +294,12 @@ func (ctl *Control) writer() {
 	defer ctl.allShutdown.Start()
 	defer ctl.writerShutdown.Done()
 
-	//encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.serverCfg.Token))
-	//if err != nil {
-	//	xl.Error("crypto new writer error: %v", err)
-	//	ctl.allShutdown.Start()
-	//	return
-	//}
+	encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.serverCfg.Token))
+	if err != nil {
+		xl.Error("crypto new writer error: %v", err)
+		ctl.allShutdown.Start()
+		return
+	}
 	for {
 		m, ok := <-ctl.sendCh
 		if !ok {
@@ -307,7 +307,7 @@ func (ctl *Control) writer() {
 			return
 		}
 
-		if err := msg.WriteMsg(ctl.conn, m); err != nil {
+		if err := msg.WriteMsg(encWriter, m); err != nil {
 			xl.Warn("write message to control connection error: %v", err)
 			return
 		}
@@ -326,9 +326,9 @@ func (ctl *Control) reader() {
 	defer ctl.allShutdown.Start()
 	defer ctl.readerShutdown.Done()
 
-	//encReader := crypto.NewReader(ctl.conn, []byte(ctl.serverCfg.Token))
+	encReader := crypto.NewReader(ctl.conn, []byte(ctl.serverCfg.Token))
 	for {
-		m, err := msg.ReadMsg(ctl.conn)
+		m, err := msg.ReadMsg(encReader)
 		if err != nil {
 			if err == io.EOF {
 				xl.Debug("control connection closed")
@@ -449,7 +449,6 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					m.ProxyName = uuid.NewString()[:18]
 					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 

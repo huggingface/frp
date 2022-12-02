@@ -17,6 +17,7 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"github.com/fatedier/golib/crypto"
 	"io"
 	"net"
 	"runtime/debug"
@@ -173,7 +174,7 @@ func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 	if err != nil {
 		xl.Warn("[%s] start error: %v", inMsg.ProxyName, err)
 	} else {
-		xl.Info("[%s] start proxy success", inMsg.ProxyName)
+		xl.Info("[%s] start proxy success: %s", inMsg.ProxyName, inMsg.RemoteAddr)
 	}
 }
 
@@ -279,9 +280,9 @@ func (ctl *Control) reader() {
 	defer ctl.readerShutdown.Done()
 	defer close(ctl.closedCh)
 
-	//encReader := crypto.NewReader(ctl.conn, []byte(ctl.clientCfg.Token))
+	encReader := crypto.NewReader(ctl.conn, []byte(ctl.clientCfg.Token))
 	for {
-		m, err := msg.ReadMsg(ctl.conn)
+		m, err := msg.ReadMsg(encReader)
 		if err != nil {
 			if err == io.EOF {
 				xl.Debug("read from control connection EOF")
@@ -299,12 +300,12 @@ func (ctl *Control) reader() {
 func (ctl *Control) writer() {
 	xl := ctl.xl
 	defer ctl.writerShutdown.Done()
-	//encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.clientCfg.Token))
-	//if err != nil {
-	//	xl.Error("crypto new writer error: %v", err)
-	//	ctl.conn.Close()
-	//	return
-	//}
+	encWriter, err := crypto.NewWriter(ctl.conn, []byte(ctl.clientCfg.Token))
+	if err != nil {
+		xl.Error("crypto new writer error: %v", err)
+		ctl.conn.Close()
+		return
+	}
 	for {
 		m, ok := <-ctl.sendCh
 		if !ok {
@@ -312,7 +313,7 @@ func (ctl *Control) writer() {
 			return
 		}
 
-		if err := msg.WriteMsg(ctl.conn, m); err != nil {
+		if err := msg.WriteMsg(encWriter, m); err != nil {
 			xl.Warn("write message to control connection error: %v", err)
 			return
 		}
