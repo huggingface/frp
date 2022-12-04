@@ -35,6 +35,7 @@ const (
 	TypeNatHoleResp           = 'm'
 	TypeNatHoleClientDetectOK = 'd'
 	TypeNatHoleSid            = '5'
+	TypeKill                  = 'k'
 )
 
 var msgTypeMap = map[byte]interface{}{
@@ -56,6 +57,7 @@ var msgTypeMap = map[byte]interface{}{
 	TypeNatHoleResp:           NatHoleResp{},
 	TypeNatHoleClientDetectOK: NatHoleClientDetectOK{},
 	TypeNatHoleSid:            NatHoleSid{},
+	TypeKill:                  Kill{},
 }
 
 // When frpc start, client send this message to login to server.
@@ -128,6 +130,7 @@ type NewWorkConn struct {
 }
 
 type ReqWorkConn struct{}
+type Kill struct{}
 
 type StartWorkConn struct {
 	ProxyName string `json:"proxy_name,omitempty"`

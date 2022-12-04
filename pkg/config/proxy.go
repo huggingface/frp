@@ -16,7 +16,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"net"
 	"reflect"
 	"strconv"
@@ -793,7 +792,7 @@ func (cfg *HTTPProxyConf) CheckForSvr(serverCfg ServerCommonConf) (err error) {
 		return fmt.Errorf("type [http] not support when vhost_http_port is not set")
 	}
 
-	cfg.SubDomain = uuid.New().String()[:18]
+	cfg.SubDomain = cfg.ProxyName
 
 	if err = cfg.DomainConf.checkForSvr(serverCfg); err != nil {
 		err = fmt.Errorf("proxy [%s] domain conf check error: %v", cfg.ProxyName, err)
