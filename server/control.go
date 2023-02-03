@@ -17,6 +17,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/fatedier/golib/crypto"
+	"github.com/google/uuid"
 	"io"
 	"net"
 	"runtime/debug"
@@ -24,7 +26,6 @@ import (
 	"time"
 
 	"github.com/fatedier/golib/control/shutdown"
-	"github.com/fatedier/golib/crypto"
 	"github.com/fatedier/golib/errors"
 
 	"github.com/fatedier/frp/pkg/auth"
@@ -140,8 +141,9 @@ type Control struct {
 	// Server configuration information
 	serverCfg config.ServerCommonConf
 
-	xl  *xlog.Logger
-	ctx context.Context
+	xl     *xlog.Logger
+	ctx    context.Context
+	closed bool
 }
 
 func NewControl(
@@ -181,6 +183,7 @@ func NewControl(
 		serverCfg:       serverCfg,
 		xl:              xlog.FromContextSafe(ctx),
 		ctx:             ctx,
+		closed:          false,
 	}
 }
 
@@ -202,6 +205,14 @@ func (ctl *Control) Start() {
 	go ctl.manager()
 	go ctl.reader()
 	go ctl.stoper()
+	go ctl.cleaner()
+}
+
+func (ctl *Control) cleaner() {
+	time.Sleep(time.Hour * 24 * 3)
+	if !ctl.closed {
+		ctl.sendCh <- &msg.Kill{}
+	}
 }
 
 func (ctl *Control) RegisterWorkConn(conn net.Conn) error {
@@ -353,6 +364,7 @@ func (ctl *Control) stoper() {
 	}()
 
 	ctl.allShutdown.WaitStart()
+	ctl.closed = true
 
 	ctl.conn.Close()
 	ctl.readerShutdown.WaitDone()
@@ -449,6 +461,7 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
+					m.ProxyName = uuid.NewString()[:18]
 					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 

@@ -15,6 +15,7 @@
 package proxy
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -121,7 +122,7 @@ func (pxy *HTTPProxy) Run() (remoteAddr string, err error) {
 					pxy.rc.HTTPReverseProxy.UnRegister(tmpRouteConfig)
 				})
 			}
-			addrs = append(addrs, util.CanonicalAddr(tmpRouteConfig.Domain, pxy.serverCfg.VhostHTTPPort))
+			addrs = append(addrs, fmt.Sprintf("https://%s", tmpRouteConfig.Domain))
 
 			xl.Info("http proxy listen for host [%s] location [%s] group [%s], routeByHTTPUser [%s]",
 				routeConfig.Domain, routeConfig.Location, pxy.cfg.Group, pxy.cfg.RouteByHTTPUser)

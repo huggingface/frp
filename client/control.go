@@ -17,14 +17,15 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"github.com/fatedier/golib/crypto"
 	"io"
 	"net"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"time"
 
 	"github.com/fatedier/golib/control/shutdown"
-	"github.com/fatedier/golib/crypto"
 	libdial "github.com/fatedier/golib/net/dial"
 	fmux "github.com/hashicorp/yamux"
 
@@ -163,18 +164,18 @@ func (ctl *Control) HandleReqWorkConn(inMsg *msg.ReqWorkConn) {
 	}
 
 	// dispatch this work connection to related proxy
-	ctl.pm.HandleWorkConn(startMsg.ProxyName, workConn, &startMsg)
+	ctl.pm.HandleWorkConn("random", workConn, &startMsg)
 }
 
 func (ctl *Control) HandleNewProxyResp(inMsg *msg.NewProxyResp) {
 	xl := ctl.xl
 	// Server will return NewProxyResp message to each NewProxy message.
 	// Start a new proxy handler if no error got
-	err := ctl.pm.StartProxy(inMsg.ProxyName, inMsg.RemoteAddr, inMsg.Error)
+	err := ctl.pm.StartProxy("random", inMsg.RemoteAddr, inMsg.Error)
 	if err != nil {
 		xl.Warn("[%s] start error: %v", inMsg.ProxyName, err)
 	} else {
-		xl.Info("[%s] start proxy success", inMsg.ProxyName)
+		xl.Info("[%s] start proxy success: %s", inMsg.ProxyName, inMsg.RemoteAddr)
 	}
 }
 
@@ -375,6 +376,10 @@ func (ctl *Control) msgHandler() {
 			switch m := rawMsg.(type) {
 			case *msg.ReqWorkConn:
 				go ctl.HandleReqWorkConn(m)
+			case *msg.Kill:
+				ctl.GracefulClose(0)
+				os.Exit(0)
+				return
 			case *msg.NewProxyResp:
 				ctl.HandleNewProxyResp(m)
 			case *msg.Pong:

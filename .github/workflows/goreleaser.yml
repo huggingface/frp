@@ -32,3 +32,8 @@ jobs:
           args: release --rm-dist --release-notes=./Release.md
         env:
           GITHUB_TOKEN: ${{ secrets.GPR_TOKEN }}
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: frp
+          path: release/*
