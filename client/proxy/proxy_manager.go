@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net"
 	"sync"
@@ -130,6 +131,10 @@ func (pm *Manager) Reload(pxyCfgs map[string]config.ProxyConf) {
 
 	addPxyNames := make([]string, 0)
 	for name, cfg := range pxyCfgs {
+		h := sha256.New()
+		h.Write([]byte(name))
+		bs := h.Sum(nil)
+		name = fmt.Sprintf("%x", bs)[:18]
 		if _, ok := pm.proxies[name]; !ok {
 			pxy := NewWrapper(pm.ctx, cfg, pm.clientCfg, pm.HandleEvent, pm.serverUDPPort)
 			pm.proxies[name] = pxy
