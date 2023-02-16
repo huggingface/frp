@@ -16,6 +16,7 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"github.com/fatedier/golib/crypto"
 	"github.com/google/uuid"
@@ -461,7 +462,14 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					m.ProxyName = uuid.NewString()[:18]
+					if m.ProxyName != "random" {
+						h := sha256.New()
+						h.Write([]byte(m.ProxyName))
+						bs := h.Sum(nil)
+						m.ProxyName = fmt.Sprintf("%x", bs)[:18]
+					} else {
+						m.ProxyName = uuid.NewString()[:18]
+					}
 					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 
