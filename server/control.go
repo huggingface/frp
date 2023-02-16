@@ -462,7 +462,7 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					if m.ProxyName != "" {
+					if m.ProxyName != "random" {
 						h := sha256.New()
 						h.Write([]byte(m.ProxyName))
 						bs := h.Sum(nil)
