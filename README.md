@@ -41,7 +41,14 @@ And voila!
 Running on your Share Server: https://07f56cd0f87061c8a1.mycompany.com
 ```
 
-## 
+## Setting Up A Share Server
+
+### Prerequisites
+
+* Have a server (e.g. EC2 machine on AWS) that is accessible to the internet
+
+### 1. 
+* 
 
 We've open-sourced it so that you can run your own Share Servers, allowing
 
