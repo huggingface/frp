@@ -22,7 +22,7 @@ you get a share link like: `https://07ff8706ab.gradio.live`, and your Gradio app
 ## Why Run Your Own Share Server?
 
 You might want to run your own server for several reasons:
-* Custom domains: Instead of `*.gradio.live`, you can use any domain your heart desires
+* Custom domains: Instead of `*.gradio.live`, you can use any domain your heart desires and that you actually own
 * Longer links: when you run your own Share Server, you don't need to restrict share links from expiring after 72 hours
 * Security / privacy: by setting up your own Share Server in your virtual private cloud, you can make your information security team happy
 
