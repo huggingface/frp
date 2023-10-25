@@ -9,7 +9,7 @@ When you create a Gradio app and launch it with `share=True` like this:
 ```py
 import gradio as gr
 
-app = gr.Interface(lambda x: x, "image", "textbox")
+app = gr.Interface(lambda x: x, "image", "image")
 app.launch(share=True)
 ```
 
