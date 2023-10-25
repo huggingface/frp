@@ -13,7 +13,7 @@ app = gr.Interface(lambda x: x, "image", "image")
 app.launch(share=True)
 ```
 
-you get a share link that looks like: `https://07ff87061c8a1.gradio.live`, and your Gradio app is now accessible to anyone through the Internet.
+you get a share link like: `https://07ff8706ab.gradio.live`, and your Gradio app is now accessible to anyone through the Internet (for up to 72 hours).
 
 **How does this happen?** Your Gradio app runs on a Python server locally, but we use FRP to expose the local server to the Internet. FRP consists of two parts:
 * FRP Client: this runs on *your* machine. We package binaries for the most common operating systems, and the [FRP Client for your system is downloaded](https://github.com/gradio-app/gradio/blob/main/gradio/tunneling.py#L47) the first time you create a share link on your machine)
