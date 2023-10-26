@@ -132,7 +132,7 @@ docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restar
 
 In order to make sure that users can connect to your Share Server, you need to ensure that traffic is allowed at the correct ports. 
 
-<img width="1227" alt="image" src="https://github.com/huggingface/frp/assets/1778297/e3cb1faa-81da-43bc-b26c-9ba03e2ecd72">
+<img width="1214" alt="image" src="https://github.com/huggingface/frp/assets/1778297/93760bbb-f10e-47f7-9b7e-2399a743a357">
 
 
 That's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
