@@ -1,6 +1,6 @@
 # Gradio Share Server (FRP)
 
-This repo is a fork of [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), which runs on Gradio's Share Server to enable Gradio's [Share links](https://www.gradio.app/guides/sharing-your-app#sharing-demos). Instructions on how to set up your own Share Server and thereby generate custom share links are below 🔥
+This repo is a fork of [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), which runs on Gradio's Share Server to enable Gradio's [Share links](https://www.gradio.app/guides/sharing-your-app#sharing-demos). Instructions on how to set up your own Share Server to generate *custom* share links are below 🔥
 
 ## Background
 
@@ -19,14 +19,16 @@ you get a share link like: `https://07ff8706ab.gradio.live`, and your Gradio app
 * FRP Client: this runs on *your* machine. We package binaries for the most common operating systems, and the [FRP Client for your system is downloaded](https://github.com/gradio-app/gradio/blob/main/gradio/tunneling.py#L47) the first time you create a share link on your machine.
 * FRP Server: this runs on Gradio's Share Server, but since the FRP Server is open-source, you can run it on your own server as well! 
 
+The FRP Client establishes a connection from your local machine to the FRP Server, which is accessible on the internet. The FRP Server then provides a public URL that forwards incoming requests to the FRP Client, which in turn sends them to your locally running web app.
+
 ## Why Run Your Own Share Server?
 
 You might want to run your own server for several reasons:
-* Custom domains: Instead of `*.gradio.live`, you can use any domain your heart desires as long as you own it
-* Longer links: when you run your own Share Server, you don't need to restrict share links from expiring after 72 hours
-* Security / privacy: by setting up your own Share Server in your virtual private cloud, you can make your information security team happy
+* **Custom domains**: Instead of `*.gradio.live`, you can use any domain your heart desires as long as you own it
+* **Longer links**: when you run your own Share Server, you don't need to restrict share links from expiring after 72 hours
+* **Security / privacy**: by setting up your own Share Server in your virtual private cloud, you can make your information security team happy
 
-Its also quite straightforward. In your Gradio app, the only change you'll make is passing in the IP address to your share server, as the `share_server_address` parameter in `launch()`:
+It's also quite straightforward. In your Gradio app, the only change you'll make is passing in the IP address to your share server, as the `share_server_address` parameter in `launch()`:
 
 ```py
 import gradio as gr
@@ -130,12 +132,21 @@ docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restar
 
 ### 5. Allow Traffic to Your Server
 
-In order to make sure that users can connect to your Share Server, you need to ensure that traffic is allowed at the correct ports. 
+In order to make sure that users can connect to your Share Server, you need to ensure that traffic is allowed at the correct ports. You will need to allow:
+
+* TCP traffic to port `7000` (or whichever port you chose as the `bind_port` in Step 3) 
+* HTTP traffic to port `80`
+* (Optionally, if you have HTTPS certificates on your domain), HTTPS traffic to port `443`
+
+Note: If you'd like, you can restrict the IP addresses of the former rule to those people who should be able to *create* share links and you can restric the IP addresses of the latter two rules to those users who should be able to *view* share links.
+
+If you are using AWS, here is what your security rules might look like:
 
 <img width="1214" alt="image" src="https://github.com/huggingface/frp/assets/1778297/93760bbb-f10e-47f7-9b7e-2399a743a357">
 
+------
 
-That's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
+And that's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
 
 ```py
 import gradio as gr
@@ -145,4 +156,3 @@ app.launch(share=True, share_server_address="my-gpt-wrapper.com:7000")
 ```
 
 **Note**: If you have installed HTTPS certificates on your Share Server, and your share links are being served through HTTPS, then you should also set `share_server_protocol="https"` in `launch()`.
-
