@@ -72,6 +72,10 @@ sudo apt install docker-ce
 
 Confirm that you Docker has been installed and you are running version `20.10` or higher by running: `docker version` in the terminal. You should see something like:
 
-
+```
+Client: Docker Engine - Community
+ Version:           24.0.6
+...
+```
 
 
