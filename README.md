@@ -46,7 +46,7 @@ Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
 ### Prerequisites
 
 * A **server** (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers (e.g. a `t2-small`) should do just fine, we recommend having at least 2 GB of RAM and 8 GB of disk space. You will need to be able to SSH into your server
-* The server should have an **elastic IP address** and a **domain name**. The specific instructions depend on the domain name registrar and cloud provider you use. For example, here are the instructions for [AWS using EC2 and Route53](https://aws.plainenglish.io/assigning-a-domain-name-to-an-aws-ec2-instance-via-elastic-ip-d2234b1662cc).
+* The server should have an **elastic IP address** and a **domain name**. The specific instructions depend on the domain name registrar and cloud provider you use. For example, here are the instructions for [AWS using EC2 and Route53](https://medium.com/front-end-weekly/connecting-a-domain-to-an-aws-ec2-instance-using-route53-69faffddda39).
 
 Note down:
 * The **IP address** of your server
