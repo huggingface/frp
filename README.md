@@ -94,7 +94,7 @@ git clone git@github.com:huggingface/frp.git
 cd frp
 ```
 
-Note for advanced users: If you would like to change [which port FRPS runs on](https://github.com/huggingface/frp/tree/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/conf) (default is 7000) or the [expiry time of share links](https://github.com/huggingface/frp/blob/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/server/control.go#L213) (default is 72 hours)
+Note for advanced users: If you would like to change [which port FRPS runs on](https://github.com/huggingface/frp/tree/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/conf) (default is 7000) or the [expiry time of share links](https://github.com/huggingface/frp/blob/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/server/control.go#L213) (default is 72 hours), edit the linked files directly on your server.
 
 ### 3. Launch the FRP Server Docker Container
 
