@@ -32,13 +32,13 @@ Its also quite straightforward. In your Gradio app, the only change you'll make 
 import gradio as gr
 
 app = gr.Interface(lambda x: x, "image", "image")
-app.launch(share=True, share_server_address="44.237.78.176:7000")
+app.launch(share=True, share_server_address="my-gpt-wrapper.com:7000")
 ```
 
 And voila!
 
 ```
-Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
+Running on your Share Server: http://07f56cd0f87061c8a1.my-gpt-wrapper.com
 ```
 
 ## Setting Up A Share Server
@@ -128,9 +128,12 @@ docker build -f dockerfiles/Dockerfile-for-frps -t frps:0.2 .
 docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restart unless-stopped --network host -v ~/frp/scripts:/etc/frp frps:0.2 -c /etc/frp/frps.ini
 ```
 
-### 4. Open Ports on Your Server
+### 5. Allow Traffic to Your Server
 
-In order to 
+In order to make sure that users can connect to your Share Server, you need to ensure that traffic is allowed at the correct ports. 
+
+<img width="1227" alt="image" src="https://github.com/huggingface/frp/assets/1778297/e3cb1faa-81da-43bc-b26c-9ba03e2ecd72">
+
 
 That's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
 
@@ -138,7 +141,7 @@ That's it! You now have your own little Share Server! As mentioned earlier, you 
 import gradio as gr
 
 app = gr.Interface(lambda x: x, "image", "image")
-app.launch(share=True, share_server_address="44.237.78.176:7000")
+app.launch(share=True, share_server_address="my-gpt-wrapper.com:7000")
 ```
 
 **Note**: If you have installed HTTPS certificates on your Share Server, and your share links are being served through HTTPS, then you should also set `share_server_protocol="https"` in `launch()`.
