@@ -96,8 +96,6 @@ Note: you may need `sudo` permissions for these commands:
 docker build -f dockerfiles/Dockerfile-for-frps -t frps:0.2 .
 ```
 
-Note: this step may 
-
 ```console
 docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restart unless-stopped --network host -v ~/frp/scripts:/etc/frp frps:0.2 -c /etc/frp/frps.ini
 ```
