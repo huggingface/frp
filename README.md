@@ -100,4 +100,20 @@ docker build -f dockerfiles/Dockerfile-for-frps -t frps:0.2 .
 docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restart unless-stopped --network host -v ~/frp/scripts:/etc/frp frps:0.2 -c /etc/frp/frps.ini
 ```
 
+### 4. Open Ports on Your Server
+
+In order to 
+
+That's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
+
+```py
+import gradio as gr
+
+app = gr.Interface(lambda x: x, "image", "image")
+app.launch(share=True, share_server_address="44.237.78.176:7000")
+```
+
+## Advanced Settings
+
+Once you've set up your Share Server, you can 
 
