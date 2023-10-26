@@ -55,7 +55,7 @@ Note down:
 
 ### 1. Install Docker (v. 20.10 or higher)
 
-If you are running Ubuntu, you can do this by running these commands sequentially in the terminal after you have SSH'd into the server:
+You can do this by running these commands (for this guide, we assume you are running Ubuntu) sequentially in the terminal after you have SSH'd into the server:
 
 ```console
 sudo apt update
