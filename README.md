@@ -45,12 +45,10 @@ Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
 
 ### Prerequisites
 
-* A **server** (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers (e.g. a `t2-small`) should do just fine, we recommend having at least 2 GB of RAM and 8 GB of disk space. You will need to be able to SSH into your server
+* A **server** (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers provided by cloud providers (e.g. a `t2-small` on AWS) should do just fine, we recommend having at least 2 GB of RAM and 8 GB of disk space. You will need to be able to SSH into your server.
 * The server should have an **elastic IP address** and a **domain name**. The specific instructions depend on the domain name registrar and cloud provider you use. For example, here are the instructions for [AWS using EC2 and Route53](https://medium.com/front-end-weekly/connecting-a-domain-to-an-aws-ec2-instance-using-route53-69faffddda39).
 
-Note down:
-* The **IP address** of your server
-* The **domain name** that points to your server
+**Important**: not just the root domain, but all subdomains should route to the IP address of your server. This typically means that you should have a wildcard entry in your DNS records, like the bottom-most entry here: 
 
 
 ### 1. Install Docker (v. 20.10 or higher)
@@ -96,7 +94,27 @@ cd frp
 
 Note for advanced users: If you would like to change [which port FRPS runs on](https://github.com/huggingface/frp/tree/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/conf) (default is 7000) or the [expiry time of share links](https://github.com/huggingface/frp/blob/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/server/control.go#L213) (default is 72 hours), edit the linked files directly on your server.
 
-### 3. Launch the FRP Server Docker Container
+### 3. Edit the FRP Server Configuration File
+
+Open the `scripts/frps.ini` file, and edit the value of the `subdomain_host` property to reflect your domain (without any prefixes). 
+
+You can also set `bind_port`, which is the default port used to the FRP connections to something other than `7000`, or customize the 404 page (`custom_404_page`) which is shown when there is no active Gradio app connected to the Share Server.
+
+Here's a sample customized `.ini` file:
+
+```ini
+[common]
+log_level = trace
+tcp_mux = true
+bind_port = 7000
+dashboard_port = 7001
+vhost_http_port = 80
+subdomain_host = my-gpt-wrapper.com
+detailed_errors_to_client = false
+custom_404_page = /etc/frp/my-404.html
+```
+
+### 4. Launch the FRP Server Docker Container
 
 Note: you may need `sudo` permissions for these commands:
 
@@ -121,4 +139,5 @@ app = gr.Interface(lambda x: x, "image", "image")
 app.launch(share=True, share_server_address="44.237.78.176:7000")
 ```
 
+**Note**: If you have installed HTTPS certificates on your Share Server, and your share links are being served through HTTPS, then you should also set `share_server_protocol="https"` in `launch()`.
 
