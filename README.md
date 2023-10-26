@@ -45,11 +45,11 @@ Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
 
 ### Prerequisites
 
-* Have a server (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers (e.g. a `t2-small`) should do, we recommend having at least 2 GB of RAM and 8 GB of disk space.
+* Have a server (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers (e.g. a `t2-small`) should do, we recommend having at least 2 GB of RAM and 8 GB of disk space. 
 
 ### 1. Install Docker (v. 20.10 or higher)
 
-If you are running Ubuntu, you can do this by running these commands sequentially in the terminal:
+If you are running Ubuntu, you can do this by running these commands sequentially in the terminal after you have SSH'd into the server:
 
 ```console
 sudo apt update
@@ -84,6 +84,8 @@ Client: Docker Engine - Community
 git clone git@github.com:huggingface/frp.git
 ```
 
+Note: If you would like to change which port FRPS runs on (default is 7000) 
+
 ### 3. Launch the FRP Server Docker Container
 
 ```console
@@ -100,7 +102,15 @@ docker build -f dockerfiles/Dockerfile-for-frps -t frps:0.2 .
 docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restart unless-stopped --network host -v ~/frp/scripts:/etc/frp frps:0.2 -c /etc/frp/frps.ini
 ```
 
-### 4. Open Ports on Your Server
+### 4. Attach an Elastic IP and a Domain Name
+
+Your Share Server will need a fixed IP address and a domain name. The specific instructions depend on the domain name registrar and cloud provider you use. For example, here are the instructions for [AWS using EC2 and Route53](https://aws.plainenglish.io/assigning-a-domain-name-to-an-aws-ec2-instance-via-elastic-ip-d2234b1662cc).
+
+Note down:
+* The **IP address** of your server
+* The **domain name**
+
+### 5. Open Ports on Your Server
 
 In order to 
 
