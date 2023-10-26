@@ -38,18 +38,40 @@ app.launch(share=True, share_server_address="44.237.78.176:7000")
 And voila!
 
 ```
-Running on your Share Server: https://07f56cd0f87061c8a1.mycompany.com
+Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
 ```
 
 ## Setting Up A Share Server
 
 ### Prerequisites
 
-* Have a server (e.g. EC2 machine on AWS) that is accessible to the internet
+* Have a server (e.g. EC2 machine on AWS) that is running Linux and connected to the Internet. Most servers (e.g. a `t2-small`) should do, we recommend having at least 2 GB of RAM and 8 GB of disk space.
 
-### 1. 
-* 
+### 1. Install Docker (v. 20.10 or higher)
 
-We've open-sourced it so that you can run your own Share Servers, allowing
+If you are running Ubuntu, you can do this by running these commands sequentially in the terminal:
+
+```console
+sudo apt update
+```
+```console
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+```
+```console
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+```
+```console
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+```
+```console
+apt-cache policy docker-ce
+```
+```console
+sudo apt install docker-ce
+```
+
+Confirm that you Docker has been installed and you are running version `20.10` or higher by running: `docker version` in the terminal. You should see something like:
+
+
 
 
