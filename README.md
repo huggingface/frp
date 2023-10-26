@@ -118,6 +118,9 @@ detailed_errors_to_client = false
 custom_404_page = /etc/frp/my-404.html
 ```
 
+Note: If you would like to change the expiry time of share linksdefault is 72 hours, edit [this line](https://github.com/huggingface/frp/blob/b0d5567f5df2bfc12a56bc8d787d23e2668ed9af/server/control.go#L213) in `server/control.go` as well.
+
+
 ### 4. Launch the FRP Server Docker Container
 
 Note: you may need `sudo` permissions for these commands:
