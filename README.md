@@ -50,6 +50,8 @@ Running on your Share Server: https://07f56cd0f87061c8a1.yourorganization.com
 
 **Important**: not just the root domain, but all subdomains should route to the IP address of your server. This typically means that you should have a wildcard entry in your DNS records, like the bottom-most entry here: 
 
+<img width="1354" alt="image" src="https://github.com/huggingface/frp/assets/1778297/3b2335bc-3422-4d4f-b0ea-c84b93cc0d07">
+
 
 ### 1. Install Docker (v. 20.10 or higher)
 
