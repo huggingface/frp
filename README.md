@@ -147,7 +147,7 @@ If you are using AWS, here is what your security rules might look like:
 
 ------
 
-And that's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as the `share_server_address` parameter in `launch()` like this:
+And that's it! You now have your own little Share Server! As mentioned earlier, you can use it by passing the IP address and FRPS port as a single string to the `share_server_address` parameter in `launch()` like this:
 
 ```py
 import gradio as gr
