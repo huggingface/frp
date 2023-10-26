@@ -1,6 +1,6 @@
 # Gradio Share Server (FRP)
 
-This repo is a fork of the [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp) implementation that is running on Gradio's Share Server to enable Gradio's [Share links](https://www.gradio.app/guides/sharing-your-app#sharing-demos). Instructions on how to set up your own Share Server and thereby generate custom share links are below 🔥
+This repo is a fork of [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), which runs on Gradio's Share Server to enable Gradio's [Share links](https://www.gradio.app/guides/sharing-your-app#sharing-demos). Instructions on how to set up your own Share Server and thereby generate custom share links are below 🔥
 
 ## Background
 
