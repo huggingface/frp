@@ -21,6 +21,7 @@ import (
 	"github.com/fatedier/golib/crypto"
 	"github.com/google/uuid"
 	"io"
+	"os"
 	"net"
 	"runtime/debug"
 	"sync"
@@ -82,6 +83,10 @@ func (cm *ControlManager) GetByID(runID string) (ctl *Control, ok bool) {
 	defer cm.mu.RUnlock()
 	ctl, ok = cm.ctlsByRunID[runID]
 	return
+}
+
+func generateProxyName(prefix string, i int) string {
+    return prefix + strconv.Itoa(i)
 }
 
 type Control struct {
@@ -462,15 +467,36 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					if m.ProxyName != "random" {
-						h := sha256.New()
-						h.Write([]byte(m.ProxyName))
-						bs := h.Sum(nil)
-						m.ProxyName = fmt.Sprintf("%x", bs)[:18]
+					prefix := os.Getenv("FRP_PROXY_NAME_PREFIX")
+					if prefix != "" {
+						var i int = 1
+						var registrationError error = errors.New("initial error")
+
+						for registrationError != nil && i <= 50 {
+							m.ProxyName = generateProxyName(i)
+							remoteAddr, registrationError = ctl.RegisterProxy(m)
+							if registrationError != nil {
+								i++
+							}
+						}
+
+						if registrationError != nil {
+							// Handle the case where all attempts failed
+							xl.Warn("Failed to register proxy after 50 attempts")
+							resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", m.ProxyName), registrationError, ctl.serverCfg.DetailedErrorsToClient)
+							return
+						}
 					} else {
-						m.ProxyName = uuid.NewString()[:18]
+						if m.ProxyName != "random" {
+							h := sha256.New()
+							h.Write([]byte(m.ProxyName))
+							bs := h.Sum(nil)
+							m.ProxyName = fmt.Sprintf("%x", bs)[:18]
+						} else {
+							m.ProxyName = uuid.NewString()[:18]
+						}
+						remoteAddr, err = ctl.RegisterProxy(m)
 					}
-					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 
 				// register proxy in this control
