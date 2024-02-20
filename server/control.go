@@ -470,7 +470,7 @@ func (ctl *Control) manager() {
 					prefix := os.Getenv("FRP_PROXY_NAME_PREFIX")
 					if prefix != "" {
 						var i int = 1
-						var registrationError error = errors.New("initial error")
+						var registrationError error = fmt.Errorf("initial error")
 
 						for registrationError != nil && i <= 100 {
 							m.ProxyName = generateProxyName(prefix, i)
