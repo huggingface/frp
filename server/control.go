@@ -473,7 +473,7 @@ func (ctl *Control) manager() {
 						var registrationError error = errors.New("initial error")
 
 						for registrationError != nil && i <= 50 {
-							m.ProxyName = generateProxyName(i)
+							m.ProxyName = generateProxyName(prefix, i)
 							remoteAddr, registrationError = ctl.RegisterProxy(m)
 							if registrationError != nil {
 								i++
