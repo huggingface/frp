@@ -472,17 +472,19 @@ func (ctl *Control) manager() {
 						var i int = 1
 						var registrationError error = errors.New("initial error")
 
-						for registrationError != nil && i <= 50 {
+						for registrationError != nil && i <= 100 {
 							m.ProxyName = generateProxyName(prefix, i)
 							remoteAddr, registrationError = ctl.RegisterProxy(m)
 							if registrationError != nil {
 								i++
 							}
 						}
-
 						if registrationError != nil {
 							// Handle the case where all attempts failed
-							xl.Warn("Failed to register proxy after 50 attempts")
+	                                                resp := &msg.NewProxyResp{
+						                ProxyName: m.ProxyName,
+					                }
+							xl.Warn("Failed to register proxy after 100 attempts")
 							resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", m.ProxyName), registrationError, ctl.serverCfg.DetailedErrorsToClient)
 							return
 						}
