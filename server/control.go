@@ -474,7 +474,7 @@ func (ctl *Control) manager() {
 					prefix := os.Getenv("FRP_PROXY_NAME_PREFIX")
 					if prefix != "" {
 						m.ProxyName = generateProxyName(prefix, ctl.prefixcount)
-						remoteAddr, registrationError = ctl.RegisterProxy(m)
+						remoteAddr, err = ctl.RegisterProxy(m)
 						ctl.prefixcount++
 					} else {
 						if m.ProxyName != "random" {
