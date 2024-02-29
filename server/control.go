@@ -151,6 +151,8 @@ type Control struct {
 	xl     *xlog.Logger
 	ctx    context.Context
 	closed bool
+
+	prefixcount int
 }
 
 func NewControl(
@@ -191,6 +193,7 @@ func NewControl(
 		xl:              xlog.FromContextSafe(ctx),
 		ctx:             ctx,
 		closed:          false,
+		prefixcount:     0,
 	}
 }
 
@@ -470,25 +473,9 @@ func (ctl *Control) manager() {
 					m = &retContent.NewProxy
 					prefix := os.Getenv("FRP_PROXY_NAME_PREFIX")
 					if prefix != "" {
-						var i int = 1
-						var registrationError error = fmt.Errorf("initial error")
-
-						for registrationError != nil && i <= 100 {
-							m.ProxyName = generateProxyName(prefix, i)
-							remoteAddr, registrationError = ctl.RegisterProxy(m)
-							if registrationError != nil {
-								i++
-							}
-						}
-						if registrationError != nil {
-							// Handle the case where all attempts failed
-	                                                resp := &msg.NewProxyResp{
-						                ProxyName: m.ProxyName,
-					                }
-							xl.Warn("Failed to register proxy after 100 attempts")
-							resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", m.ProxyName), registrationError, ctl.serverCfg.DetailedErrorsToClient)
-							return
-						}
+						m.ProxyName = generateProxyName(prefix, ctl.prefixcount)
+						remoteAddr, registrationError = ctl.RegisterProxy(m)
+						ctl.prefixcount++
 					} else {
 						if m.ProxyName != "random" {
 							h := sha256.New()
