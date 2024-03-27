@@ -21,6 +21,8 @@ import (
 	"github.com/fatedier/golib/crypto"
 	"github.com/google/uuid"
 	"io"
+	"os"
+	"strconv"
 	"net"
 	"runtime/debug"
 	"sync"
@@ -84,6 +86,10 @@ func (cm *ControlManager) GetByID(runID string) (ctl *Control, ok bool) {
 	return
 }
 
+func generateProxyName(prefix string, i int) string {
+    return prefix + strconv.Itoa(i)
+}
+
 type Control struct {
 	// all resource managers and controllers
 	rc *controller.ResourceController
@@ -145,6 +151,8 @@ type Control struct {
 	xl     *xlog.Logger
 	ctx    context.Context
 	closed bool
+
+	prefixcount int
 }
 
 func NewControl(
@@ -185,6 +193,7 @@ func NewControl(
 		xl:              xlog.FromContextSafe(ctx),
 		ctx:             ctx,
 		closed:          false,
+		prefixcount:     0,
 	}
 }
 
@@ -462,15 +471,22 @@ func (ctl *Control) manager() {
 				retContent, err := ctl.pluginManager.NewProxy(content)
 				if err == nil {
 					m = &retContent.NewProxy
-					if m.ProxyName != "random" {
-						h := sha256.New()
-						h.Write([]byte(m.ProxyName))
-						bs := h.Sum(nil)
-						m.ProxyName = fmt.Sprintf("%x", bs)[:18]
+					prefix := os.Getenv("FRP_PROXY_NAME_PREFIX")
+					if prefix != "" {
+						m.ProxyName = generateProxyName(prefix, ctl.prefixcount)
+						remoteAddr, err = ctl.RegisterProxy(m)
+						ctl.prefixcount++
 					} else {
-						m.ProxyName = uuid.NewString()[:18]
+						if m.ProxyName != "random" {
+							h := sha256.New()
+							h.Write([]byte(m.ProxyName))
+							bs := h.Sum(nil)
+							m.ProxyName = fmt.Sprintf("%x", bs)[:18]
+						} else {
+							m.ProxyName = uuid.NewString()[:18]
+						}
+						remoteAddr, err = ctl.RegisterProxy(m)
 					}
-					remoteAddr, err = ctl.RegisterProxy(m)
 				}
 
 				// register proxy in this control

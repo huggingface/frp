@@ -131,6 +131,8 @@ docker build -f dockerfiles/Dockerfile-for-frps -t frps:0.2 .
 docker run --log-opt max-size=100m --memory=1G --cpus=1 --name frps3 -d --restart unless-stopped --network host -v ~/frp/scripts:/etc/frp frps:0.2 -c /etc/frp/frps.ini
 ```
 
+Note : to create custom links, the `FRP_PROXY_NAME_PREFIX` variable can be set. For example adding the option `-e FRP_PROXY_NAME_PREFIX=demo` will generate links such as `demo1.mydomain.com`, `demo2.mydomain.com`... Leaving the variable empty will generate 18-characters random links such as `90a52f3b5898027235.mydomain.com`
+
 ### 5. Allow Traffic to Your Server
 
 In order to make sure that users can connect to your Share Server, you need to ensure that traffic is allowed at the correct ports. You will need to allow:
