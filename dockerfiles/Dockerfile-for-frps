@@ -9,4 +9,8 @@ FROM alpine:3
 
 COPY --from=building /building/bin/frps /usr/bin/frps
 
+RUN apk add curl
+
+HEALTHCHECK --interval=1m --timeout=30s --retries=3 CMD curl --fail http://localhost:7001/healthz || exit 1
+
 ENTRYPOINT ["/usr/bin/frps"]
