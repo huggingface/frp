@@ -74,6 +74,7 @@ var (
 	bindPort          int
 
 	tlsEnable bool
+	tlsTrustedCAFile string
 )
 
 func init() {
@@ -92,6 +93,7 @@ func RegisterCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().IntVarP(&logMaxDays, "log_max_days", "", 3, "log file reversed days")
 	cmd.PersistentFlags().BoolVarP(&disableLogColor, "disable_log_color", "", false, "disable log color in console")
 	cmd.PersistentFlags().BoolVarP(&tlsEnable, "tls_enable", "", false, "enable frpc tls")
+	cmd.PersistentFlags().StringVarP(&tlsTrustedCAFile, "tls_trusted_ca_file", "", "", "path to tls file")
 }
 
 var rootCmd = &cobra.Command{
@@ -180,6 +182,7 @@ func parseClientCommonCfgFromCmd() (cfg config.ClientCommonConf, err error) {
 	cfg.ClientConfig = auth.GetDefaultClientConf()
 	cfg.Token = token
 	cfg.TLSEnable = tlsEnable
+	cfg.TLSTrustedCaFile = tlsTrustedCAFile
 
 	cfg.Complete()
 	if err = cfg.Validate(); err != nil {
