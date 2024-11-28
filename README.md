@@ -1,6 +1,8 @@
-# Gradio Share Server (FRP)
+# Gradio Share Server (FRP) - `tls` branch
 
 This repo is a fork of [Fast Reverse Proxy (FRP)](https://github.com/fatedier/frp), which runs on Gradio's Share Server to enable Gradio's [Share links](https://www.gradio.app/guides/sharing-your-app#sharing-demos). Instructions on how to set up your own Share Server to generate *custom* share links are below 🔥
+
+* The `tls` branch imlements TLS based encryption over the FRP tunnel.
 
 ## Background
 
