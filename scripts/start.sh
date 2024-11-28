@@ -17,13 +17,13 @@ COMMAND="/home/ubuntu/frp/scripts/renew_tls_certificate.sh"
 IDENTIFIER="# renew_tls_certificate"
 
 CRON_JOB="$CRON_SCHEDULE $COMMAND $IDENTIFIER"
-EXISTING_CRONS=$(crontab -l 2>/dev/null || true)
+EXISTING_CRONS=$(sudo crontab -l 2>/dev/null || true)
 
 if echo "$EXISTING_CRONS" | grep -q "$IDENTIFIER"; then
   UPDATED_CRONS=$(echo "$EXISTING_CRONS" | sed "/$IDENTIFIER/d")
-  echo -e "$UPDATED_CRONS\n$CRON_JOB" | crontab -
+  echo -e "$UPDATED_CRONS\n$CRON_JOB" | sudo crontab -
 else
-  echo -e "$EXISTING_CRONS\n$CRON_JOB" | crontab -
+  echo -e "$EXISTING_CRONS\n$CRON_JOB" | sudo crontab -
 fi
 
 echo "Cron job successfully managed!"
