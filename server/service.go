@@ -482,7 +482,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 		
 		// Send HTTP request to FastAPI server
 		resp, err := http.Post(
-			"http://127.0.0.1:8000/log_connection",
+			"http://127.0.0.1:8765/log_connection",
 			"application/json",
 			bytes.NewBuffer(jsonData),
 		)
