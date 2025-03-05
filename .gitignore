@@ -37,3 +37,6 @@ dist/
 
 # Cache
 *.swp
+
+connection_logger.log
+gradio_connections.db
