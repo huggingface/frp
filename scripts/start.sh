@@ -8,6 +8,22 @@ if docker ps -a | grep -q frps3; then
     sudo docker rm frps3
 fi
 
+# Start the connection logger server if it's not already running
+if ! pgrep -f "connection_logger_server.py" > /dev/null; then
+    echo "Starting connection logger server..."
+    cd /home/ubuntu/frp
+    nohup python /home/ubuntu/frp/scripts/connection_logger_server.py > /home/ubuntu/frp/connection_logger.log 2>&1 &
+    # Wait a moment to ensure the server starts
+    sleep 2
+    
+    # Check if the server started successfully
+    if ! curl -s http://127.0.0.1:8000/health > /dev/null; then
+        echo "Warning: Connection logger server failed to start. Continuing anyway..."
+    else
+        echo "Connection logger server started successfully."
+    fi
+fi
+
 sudo docker run --log-opt max-size=100m --memory=28G --cpus=6 --name frps3 -d --restart unless-stopped --network host -v ~/frp/combined:/etc/frp frps:0.2 -c /etc/frp/frps_tls.ini
 
 # renew tls certificate every 2 months

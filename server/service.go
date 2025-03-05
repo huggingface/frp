@@ -18,11 +18,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"os/exec"
 	"sort"
 	"strconv"
 	"time"
@@ -466,13 +466,31 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 		return
 	}
 
-	// Log connection to Python script
+	// Log connection to FastAPI server
 	remoteAddr := ctlConn.RemoteAddr().String()
 	go func() {
-		cmd := exec.Command("python", "connection_logger.py", "connect", remoteAddr)
-		if err := cmd.Run(); err != nil {
-			log.Warn("Failed to log connection: %v", err)
+		// Create JSON payload
+		payload := map[string]string{
+			"event_type": "connect",
+			"remote_addr": remoteAddr,
 		}
+		jsonData, err := json.Marshal(payload)
+		if err != nil {
+			log.Warn("Failed to marshal connection data: %v", err)
+			return
+		}
+		
+		// Send HTTP request to FastAPI server
+		resp, err := http.Post(
+			"http://127.0.0.1:8000/log_connection",
+			"application/json",
+			bytes.NewBuffer(jsonData),
+		)
+		if err != nil {
+			log.Warn("Failed to log connection: %v", err)
+			return
+		}
+		defer resp.Body.Close()
 	}()
 
 	ctl := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, svr.authVerifier, ctlConn, loginMsg, svr.cfg)
