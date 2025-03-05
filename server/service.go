@@ -22,6 +22,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os/exec"
 	"sort"
 	"strconv"
 	"time"
@@ -464,6 +465,15 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 	if err = svr.authVerifier.VerifyLogin(loginMsg); err != nil {
 		return
 	}
+
+	// Log connection to Python script
+	remoteAddr := ctlConn.RemoteAddr().String()
+	go func() {
+		cmd := exec.Command("python", "connection_logger.py", "connect", remoteAddr)
+		if err := cmd.Run(); err != nil {
+			log.Warn("Failed to log connection: %v", err)
+		}
+	}()
 
 	ctl := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, svr.authVerifier, ctlConn, loginMsg, svr.cfg)
 	if oldCtl := svr.ctlManager.Add(loginMsg.RunID, ctl); oldCtl != nil {
