@@ -220,7 +220,7 @@ with gr.Blocks() as demo:
 #     timer = gr.Timer()
 #     timer.tick(get_map_data, None, map_plot)
 
-gr.mount_gradio_app(app, demo, path="/")
+complete_app = gr.mount_gradio_app(app, demo, path="/")
 
 if __name__ == "__main__":
-    uvicorn.run("connection_logger_server:app", host="127.0.0.1", port=8765, reload=True) 
+    uvicorn.run("connection_logger_server:complete_app", host="127.0.0.1", port=8765) 

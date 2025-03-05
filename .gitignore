@@ -40,3 +40,4 @@ dist/
 
 connection_logger.log
 gradio_connections.db
+__pycache__/
