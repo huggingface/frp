@@ -118,82 +118,17 @@ def read_db_and_plot_connections():
     
     return average_minute, connections_per_minute, average_hour, connections_per_hour
 
-def get_map_data():
+def get_ip_address_list() -> list[list[str]]:
     """
-    Read connection data from the database for the last 24 hours,
-    determine the country for each IP address, and create a choropleth map.
+    Read the connection data from the database and return a list of the last 
+    100 IP addresses and ports that have connected to the server.
     """
-    import pandas as pd
-    import plotly.express as px
-    from collections import Counter
-    from ip2geotools.databases.noncommercial import DbIpCity
-    
-    # Get data for the last 24 hours
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
-    current_time = int(time.time())
-    twenty_four_hours_ago = current_time - (60)
-    
-    cursor.execute('SELECT remote_addr FROM connections WHERE timestamp >= ?', 
-                  (twenty_four_hours_ago,))
-    connections = cursor.fetchall()
+    cursor.execute('SELECT remote_addr FROM connections ORDER BY timestamp DESC LIMIT 100')
+    ip_addresses = cursor.fetchall()
     conn.close()
-    
-    if not connections:
-        # Return empty figure if no data
-        fig = px.choropleth(
-            locations=[],
-            color=[],
-            color_continuous_scale=px.colors.sequential.Blues,
-            title="Connection Locations (Last 24 Hours)"
-        )
-        return fig
-    
-    # Count connections by country
-    country_counts = Counter()
-    
-    for (ip,) in connections:
-        try:
-            # Skip private IPs and localhost
-            if (ip.startswith(('10.', '172.16.', '192.168.', '127.')) or 
-                ip == 'localhost' or ip == '::1'):
-                continue
-                
-            # Get country for IP
-            response = DbIpCity.get(ip, api_key='free')
-            if response.country:
-                country_counts[response.country] += 1
-        except Exception as e:
-            # Skip IPs that can't be resolved
-            print(f"Could not resolve country for IP {ip}: {e}")
-            continue
-    
-    # Create dataframe for choropleth
-    df = pd.DataFrame({
-        'country_code': list(country_counts.keys()),
-        'connections': list(country_counts.values())
-    })
-    
-    # Create choropleth map
-    fig = px.choropleth(
-        df,
-        locations='country_code',
-        color='connections',
-        hover_name='country_code',
-        color_continuous_scale=px.colors.sequential.Blues,
-        title="Connection Locations (Last 24 Hours)"
-    )
-    
-    fig.update_layout(
-        geo=dict(
-            showframe=False,
-            showcoastlines=True,
-            projection_type='equirectangular'
-        )
-    )
-    
-    return fig
+    return [ip[0].split(":") for ip in ip_addresses]
 
 with gr.Blocks() as demo:
     with gr.Row():
@@ -211,14 +146,9 @@ with gr.Blocks() as demo:
     timer = gr.Timer()
     timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot])
 
-# with demo.route("Map") as map_route:
-#     with gr.Row():
-#         map_plot = gr.Plot(label="Connection Locations")
-    
-#     map_route.load(get_map_data, None, map_plot)
-    
-#     timer = gr.Timer()
-#     timer.tick(get_map_data, None, map_plot)
+with demo.route("IP Addresses") as ip_route:
+    with gr.Row():
+        ip_plot = gr.Dataframe(headers=["IP Address", "Port"], value=get_ip_address_list)
 
 complete_app = gr.mount_gradio_app(app, demo, path="/")
 
