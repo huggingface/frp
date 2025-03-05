@@ -12,7 +12,13 @@ fi
 if ! pgrep -f "connection_logger_server.py" > /dev/null; then
     echo "Starting connection logger server..."
     cd /home/ubuntu/frp
-    nohup python /home/ubuntu/frp/scripts/connection_logger_server.py > /home/ubuntu/frp/connection_logger.log 2>&1 &
+    
+    # Set the environment variable for the database path
+    export GRADIO_DB_PATH="/home/ubuntu/frp/gradio_connections.db"
+    
+    # Start the server with the environment variable
+    nohup env GRADIO_DB_PATH="$GRADIO_DB_PATH" python /home/ubuntu/frp/scripts/connection_logger_server.py > /home/ubuntu/frp/connection_logger.log 2>&1 &
+    
     # Wait a moment to ensure the server starts
     sleep 2
     

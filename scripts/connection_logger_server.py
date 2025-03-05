@@ -7,7 +7,8 @@ import uvicorn
 
 app = FastAPI(title="Connection Logger")
 
-DB_PATH = "/home/ubuntu/frp/gradio_connections.db"
+# Use a relative path for local development, or absolute path in production
+DB_PATH = os.environ.get("GRADIO_DB_PATH", "gradio_connections.db")
 
 class ConnectionEvent(BaseModel):
     event_type: str
