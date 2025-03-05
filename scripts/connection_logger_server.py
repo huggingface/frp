@@ -1,18 +1,12 @@
 import sqlite3
 import time
 import os
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import uvicorn
+from flask import Flask, request, jsonify
 
-app = FastAPI(title="Connection Logger")
+app = Flask(__name__)
 
 # Use a relative path for local development, or absolute path in production
 DB_PATH = os.environ.get("GRADIO_DB_PATH", "gradio_connections.db")
-
-class ConnectionEvent(BaseModel):
-    event_type: str
-    remote_addr: str
 
 def init_db():
     """Initialize the SQLite database with a simple schema."""
@@ -31,10 +25,14 @@ def init_db():
     conn.close()
     print(f"Database initialized at {DB_PATH}")
 
-@app.post("/log_connection")
-async def log_connection(event: ConnectionEvent):
+@app.route("/log_connection", methods=["POST"])
+def log_connection():
     """Log a connection event to the database."""
     try:
+        data = request.get_json()
+        event_type = data.get("event_type")
+        remote_addr = data.get("remote_addr")
+        
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
@@ -44,22 +42,22 @@ async def log_connection(event: ConnectionEvent):
         VALUES (?, ?, ?)
         ''', (
             int(time.time()),
-            event.event_type,
-            event.remote_addr
+            event_type,
+            remote_addr
         ))
         
         conn.commit()
         conn.close()
-        print(f"Logged {event.event_type} from {event.remote_addr}")
-        return {"status": "success"}
+        print(f"Logged {event_type} from {remote_addr}")
+        return jsonify({"status": "success"})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to log connection: {str(e)}")
+        return jsonify({"status": "error", "detail": f"Failed to log connection: {str(e)}"}), 500
 
-@app.get("/health")
-async def health_check():
+@app.route("/health", methods=["GET"])
+def health_check():
     """Health check endpoint."""
-    return {"status": "healthy"}
+    return jsonify({"status": "healthy"})
 
 if __name__ == "__main__":
     init_db()
-    uvicorn.run(app, host="127.0.0.1", port=8000) 
+    app.run(host="127.0.0.1", port=8000) 
