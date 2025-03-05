@@ -8,10 +8,14 @@ if docker ps -a | grep -q frps3; then
     sudo docker rm frps3
 fi
 
+# Install requirements for the connection logger server
+echo "Checking and installing Python requirements..."
+cd /home/ubuntu/frp
+pip install -r /home/ubuntu/frp/scripts/requirements.txt
+
 # Start the connection logger server if it's not already running
 if ! pgrep -f "connection_logger_server.py" > /dev/null; then
     echo "Starting connection logger server..."
-    cd /home/ubuntu/frp
     
     # Set the environment variable for the database path
     export GRADIO_DB_PATH="/home/ubuntu/frp/gradio_connections.db"
