@@ -149,6 +149,8 @@ with gr.Blocks() as demo:
 with demo.route("IP Addresses") as ip_route:
     with gr.Row():
         ip_plot = gr.Dataframe(headers=["IP Address", "Port"], value=get_ip_address_list)
+    timer = gr.Timer()
+    timer.tick(get_ip_address_list, None, ip_plot)
 
 complete_app = gr.mount_gradio_app(app, demo, path="/")
 
