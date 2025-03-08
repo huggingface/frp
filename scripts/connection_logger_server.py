@@ -106,7 +106,8 @@ def read_db_and_plot_connections():
     Read connection data from the database and return DataFrames 
     with minute-by-minute connection counts for the last 15 minutes
     and hourly connection counts for the last 24 hours.
-    Only counts unique "connect" events based on run_id.
+    Includes both total connections and unique connections.
+    Only counts "connect" events.
     """    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -116,12 +117,12 @@ def read_db_and_plot_connections():
     twenty_four_hours_ago = current_time - (24 * 60 * 60)
     
     # Get data for the last 15 minutes - only "connect" events
-    cursor.execute('SELECT timestamp, run_id FROM connections WHERE timestamp >= ? AND event_type = "connect"', 
+    cursor.execute('SELECT timestamp, event_type, remote_addr FROM connections WHERE timestamp >= ? AND event_type = "connect"', 
                   (fifteen_minutes_ago,))
     recent_connections = cursor.fetchall()
     
     # Get data for the last 24 hours - only "connect" events
-    cursor.execute('SELECT timestamp, run_id FROM connections WHERE timestamp >= ? AND event_type = "connect"', 
+    cursor.execute('SELECT timestamp, event_type, remote_addr FROM connections WHERE timestamp >= ? AND event_type = "connect"', 
                   (twenty_four_hours_ago,))
     daily_connections = cursor.fetchall()
     conn.close()
@@ -130,39 +131,41 @@ def read_db_and_plot_connections():
         connections_per_minute = pd.DataFrame(columns=['minute', 'connections', 'metric_type'])
         average_minute = 0
     else:
-        df_minutes = pd.DataFrame(recent_connections, columns=['timestamp', 'run_id'])
+        df_minutes = pd.DataFrame(recent_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_minutes['datetime'] = df_minutes['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
         df_minutes['minute'] = df_minutes['datetime'].apply(lambda x: x.strftime('%H:%M'))
         
-        # Count unique run_ids per minute
-        # Drop rows with null run_ids
-        df_minutes = df_minutes.dropna(subset=['run_id'])
-        # For each minute, get the unique run_ids
-        unique_per_minute = df_minutes.groupby('minute')['run_id'].nunique().reset_index(name='connections')
-        unique_per_minute['metric_type'] = 'Unique Connections'
+        # Total connections per minute
+        total_per_minute = df_minutes.groupby('minute').size().reset_index(name='connections')
+        total_per_minute['metric_type'] = 'Total'
         
-        # Only use unique connections
-        connections_per_minute = unique_per_minute
-        average_minute = unique_per_minute['connections'].mean() if not unique_per_minute.empty else 0
+        # Unique connections per minute
+        unique_per_minute = df_minutes.groupby('minute')['remote_addr'].nunique().reset_index(name='connections')
+        unique_per_minute['metric_type'] = 'Unique'
+        
+        # Combine the dataframes
+        connections_per_minute = pd.concat([total_per_minute, unique_per_minute], ignore_index=True)
+        average_minute = total_per_minute['connections'].mean()
 
     if not daily_connections:
         connections_per_hour = pd.DataFrame(columns=['hour', 'connections', 'metric_type'])
         average_hour = 0
     else:
-        df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'run_id'])
+        df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_hours['datetime'] = df_hours['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
         df_hours['hour'] = df_hours['datetime'].apply(lambda x: x.strftime('%H'))
         
-        # Count unique run_ids per hour
-        # Drop rows with null run_ids
-        df_hours = df_hours.dropna(subset=['run_id'])
-        # For each hour, get the unique run_ids
-        unique_per_hour = df_hours.groupby('hour')['run_id'].nunique().reset_index(name='connections')
-        unique_per_hour['metric_type'] = 'Unique Connections'
+        # Total connections per hour
+        total_per_hour = df_hours.groupby('hour').size().reset_index(name='connections')
+        total_per_hour['metric_type'] = 'Total'
         
-        # Only use unique connections
-        connections_per_hour = unique_per_hour
-        average_hour = unique_per_hour['connections'].mean() if not unique_per_hour.empty else 0
+        # Unique connections per hour
+        unique_per_hour = df_hours.groupby('hour')['remote_addr'].nunique().reset_index(name='connections')
+        unique_per_hour['metric_type'] = 'Unique'
+        
+        # Combine the dataframes
+        connections_per_hour = pd.concat([total_per_hour, unique_per_hour], ignore_index=True)
+        average_hour = total_per_hour['connections'].mean()
     
     return average_minute, connections_per_minute, average_hour, connections_per_hour
 
@@ -171,49 +174,38 @@ def get_ip_address_list() -> list[list[str]]:
     Read the connection data from the database and return a list of the last 
     100 connections with their details.
     """
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
+        FROM connections 
+        ORDER BY timestamp DESC 
+        LIMIT 100
+    ''')
+    connections = cursor.fetchall()
+    conn.close()
+    
+    # Format the data for display
+    result = []
+    for conn in connections:
+        event_type, remote_addr, run_id, visitor_ip, timestamp = conn
+        time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         
-        # Check if the table exists
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='connections'")
-        if not cursor.fetchone():
-            conn.close()
-            return []  # Return empty list if table doesn't exist
-            
-        cursor.execute('''
-            SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
-            FROM connections 
-            ORDER BY timestamp DESC 
-            LIMIT 100
-        ''')
-        connections = cursor.fetchall()
-        conn.close()
-        
-        # Format the data for display
-        result = []
-        for conn in connections:
-            event_type, remote_addr, run_id, visitor_ip, timestamp = conn
-            time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
-            
-            if event_type == "connect" and remote_addr:
+        if event_type == "connect" and remote_addr:
+            ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
+            result.append([event_type, ip, port, run_id, time_str])
+        elif event_type == "disconnect" and run_id:
+            result.append([event_type, "", "", run_id, time_str])
+        elif event_type == "visit" and visitor_ip:
+            ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
+            result.append([event_type, ip, port, "", time_str])
+        else:
+            # Handle legacy data
+            if remote_addr:
                 ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-                result.append([event_type, ip, port, run_id, time_str])
-            elif event_type == "disconnect" and run_id:
-                result.append([event_type, "", "", run_id, time_str])
-            elif event_type == "visit" and visitor_ip:
-                ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
-                result.append([event_type, ip, port, "", time_str])
-            else:
-                # Handle legacy data
-                if remote_addr:
-                    ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-                    result.append([event_type, ip, port, run_id or "", time_str])
-        
-        return result
-    except Exception as e:
-        print(f"Error in get_ip_address_list: {e}")
-        return []  # Return empty list on error
+                result.append([event_type, ip, port, run_id or "", time_str])
+    
+    return result
 
 with gr.Blocks() as demo:
     with gr.Row():
