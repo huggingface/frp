@@ -123,7 +123,7 @@ def read_db_and_plot_connections():
     else:
         df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_hours['datetime'] = df_hours['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
-        df_hours['hour'] = df_hours['datetime'].apply(lambda x: x.strftime('%H:00'))
+        df_hours['hour'] = df_hours['datetime'].apply(lambda x: x.strftime('%H'))
         
         # Total connections per hour
         total_per_hour = df_hours.groupby('hour').size().reset_index(name='connections')
