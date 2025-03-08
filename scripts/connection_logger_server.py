@@ -221,24 +221,22 @@ def read_db_and_plot_connections():
                     float('inf')      # More than a week
                 ]
                 
-                # Define bin labels with their order
-                bin_info = [
-                    (0, "<1m"),
-                    (1, "1-5m"),
-                    (2, "5-10m"),
-                    (3, "10-30m"),
-                    (4, "30-60m"),
-                    (5, "1-2hr"),
-                    (6, "2-5hr"),
-                    (7, "5-10hr"),
-                    (8, "10-24hr"),
-                    (9, "24-48hr"),
-                    (10, "48-72hr"),
-                    (11, "72-168hr"),
-                    (12, ">168hr")
+                # Define bin labels with numeric prefixes to ensure correct sorting
+                bin_labels = [
+                    "01_<1m",
+                    "02_1-5m",
+                    "03_5-10m",
+                    "04_10-30m",
+                    "05_30-60m",
+                    "06_1-2hr",
+                    "07_2-5hr",
+                    "08_5-10hr",
+                    "09_10-24hr",
+                    "10_24-48hr",
+                    "11_48-72hr",
+                    "12_72-168hr",
+                    "13_>168hr"
                 ]
-                
-                bin_labels = [label for _, label in bin_info]
                 
                 # Bin the data
                 binned_data = np.zeros(len(bin_labels), dtype=int)
@@ -248,15 +246,11 @@ def read_db_and_plot_connections():
                             binned_data[i] += 1
                             break
                 
-                # Create DataFrame for the bar plot with order column
+                # Create DataFrame for the bar plot
                 duration_df = pd.DataFrame({
-                    'order': [order for order, _ in bin_info],
                     'duration': bin_labels,
                     'connections': binned_data
                 })
-                
-                # Sort by the order column
-                duration_df = duration_df.sort_values('order').drop('order', axis=1)
 
     return average_minute, connections_per_minute, average_hour, connections_per_hour, duration_df
 
