@@ -203,20 +203,53 @@ def read_db_and_plot_connections():
                     durations.append(disconnect_time - connect_time)
             
             if durations:
-                # Create histogram bins
-                bins = np.linspace(min(durations), max(durations), num=21)  # 21 edges for 20 bins
+                # Define predefined bins in seconds
+                bin_edges = [
+                    0,                # 0 seconds
+                    60,               # 1 minute
+                    5 * 60,           # 5 minutes
+                    10 * 60,          # 10 minutes
+                    30 * 60,          # 30 minutes
+                    60 * 60,          # 1 hour
+                    2 * 60 * 60,      # 2 hours
+                    5 * 60 * 60,      # 5 hours
+                    10 * 60 * 60,     # 10 hours
+                    24 * 60 * 60,     # 24 hours
+                    48 * 60 * 60,     # 48 hours
+                    72 * 60 * 60,     # 72 hours
+                    168 * 60 * 60,    # 168 hours (1 week)
+                    float('inf')      # More than a week
+                ]
+                
+                # Define bin labels
+                bin_labels = [
+                    "<1m",
+                    "1-5m",
+                    "5-10m",
+                    "10-30m",
+                    "30-60m",
+                    "1-2hr",
+                    "2-5hr",
+                    "5-10hr",
+                    "10-24hr",
+                    "24-48hr",
+                    "48-72hr",
+                    "72-168hr",
+                    ">168hr"
+                ]
                 
                 # Bin the data
-                categories = pd.cut(durations, bins=bins, right=False)
-                histogram = pd.value_counts(categories, sort=False)
-                
-                # Format bin labels to be more readable (seconds)
-                bin_labels = [f"{int(b.left)}-{int(b.right)} sec" for b in histogram.index]
+                binned_data = np.zeros(len(bin_labels), dtype=int)
+                for duration in durations:
+                    for i in range(len(bin_edges) - 1):
+                        if bin_edges[i] <= duration < bin_edges[i + 1]:
+                            binned_data[i] += 1
+                            break
                 
                 # Create DataFrame for the bar plot
                 duration_df = pd.DataFrame({
                     'duration': bin_labels,
-                    'connections': histogram.values
+                    'connections': binned_data
                 })
 
     return average_minute, connections_per_minute, average_hour, connections_per_hour, duration_df
@@ -274,7 +307,6 @@ with gr.Blocks() as demo:
         y="connections", 
         title="Connection Durations (last week)",
         tooltip=["duration", "connections"],
-        y_lim=[0, None]
     )
 
     demo.load(
