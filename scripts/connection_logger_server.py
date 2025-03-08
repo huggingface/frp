@@ -74,6 +74,7 @@ def read_db_and_plot_connections():
     Read connection data from the database and return DataFrames 
     with minute-by-minute connection counts for the last 15 minutes
     and hourly connection counts for the last 24 hours.
+    Includes both total connections and unique connections.
     """
     import pandas as pd
     from datetime import datetime
@@ -86,35 +87,55 @@ def read_db_and_plot_connections():
     twenty_four_hours_ago = current_time - (24 * 60 * 60)
     
     # Get data for the last 15 minutes
-    cursor.execute('SELECT timestamp, event_type FROM connections WHERE timestamp >= ?', 
+    cursor.execute('SELECT timestamp, event_type, remote_addr FROM connections WHERE timestamp >= ?', 
                   (fifteen_minutes_ago,))
     recent_connections = cursor.fetchall()
     
     # Get data for the last 24 hours
-    cursor.execute('SELECT timestamp, event_type FROM connections WHERE timestamp >= ?', 
+    cursor.execute('SELECT timestamp, event_type, remote_addr FROM connections WHERE timestamp >= ?', 
                   (twenty_four_hours_ago,))
     daily_connections = cursor.fetchall()
     conn.close()
 
     if not recent_connections:
-        connections_per_minute = pd.DataFrame(columns=['minute', 'connections'])
+        connections_per_minute = pd.DataFrame(columns=['minute', 'connections', 'metric_type'])
         average_minute = 0
     else:
-        df_minutes = pd.DataFrame(recent_connections, columns=['timestamp', 'event_type'])
+        df_minutes = pd.DataFrame(recent_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_minutes['datetime'] = df_minutes['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
         df_minutes['minute'] = df_minutes['datetime'].apply(lambda x: x.strftime('%H:%M'))
-        connections_per_minute = df_minutes.groupby('minute').size().reset_index(name='connections')
-        average_minute = connections_per_minute['connections'].mean()
+        
+        # Total connections per minute
+        total_per_minute = df_minutes.groupby('minute').size().reset_index(name='connections')
+        total_per_minute['metric_type'] = 'Total'
+        
+        # Unique connections per minute
+        unique_per_minute = df_minutes.groupby('minute')['remote_addr'].nunique().reset_index(name='connections')
+        unique_per_minute['metric_type'] = 'Unique'
+        
+        # Combine the dataframes
+        connections_per_minute = pd.concat([total_per_minute, unique_per_minute], ignore_index=True)
+        average_minute = total_per_minute['connections'].mean()
 
     if not daily_connections:
-        connections_per_hour = pd.DataFrame(columns=['hour', 'connections'])
+        connections_per_hour = pd.DataFrame(columns=['hour', 'connections', 'metric_type'])
         average_hour = 0
     else:
-        df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'event_type'])
+        df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_hours['datetime'] = df_hours['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
         df_hours['hour'] = df_hours['datetime'].apply(lambda x: x.strftime('%H:00'))
-        connections_per_hour = df_hours.groupby('hour').size().reset_index(name='connections')
-        average_hour = connections_per_hour['connections'].mean()
+        
+        # Total connections per hour
+        total_per_hour = df_hours.groupby('hour').size().reset_index(name='connections')
+        total_per_hour['metric_type'] = 'Total'
+        
+        # Unique connections per hour
+        unique_per_hour = df_hours.groupby('hour')['remote_addr'].nunique().reset_index(name='connections')
+        unique_per_hour['metric_type'] = 'Unique'
+        
+        # Combine the dataframes
+        connections_per_hour = pd.concat([total_per_hour, unique_per_hour], ignore_index=True)
+        average_hour = total_per_hour['connections'].mean()
     
     return average_minute, connections_per_minute, average_hour, connections_per_hour
 
@@ -132,10 +153,12 @@ def get_ip_address_list() -> list[list[str]]:
 
 with gr.Blocks() as demo:
     with gr.Row():
-        minute_bar_plot = gr.BarPlot(x="minute", y="connections")
+        minute_bar_plot = gr.BarPlot(x="minute", y="connections", color="metric_type", 
+                                     title="Connections per minute (last 15 minutes)")
         average_minute = gr.Label(label="Average connections per minute")
     with gr.Row():
-        hour_bar_plot = gr.BarPlot(x="hour", y="connections")
+        hour_bar_plot = gr.BarPlot(x="hour", y="connections", color="metric_type", 
+                                   title="Connections per hour (last 24 hours)")
         average_hour = gr.Label(label="Average connections per hour")
     demo.load(
         read_db_and_plot_connections, 
