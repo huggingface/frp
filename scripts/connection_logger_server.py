@@ -173,38 +173,49 @@ def get_ip_address_list() -> list[list[str]]:
     Read the connection data from the database and return a list of the last 
     100 connections with their details.
     """
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
-        FROM connections 
-        ORDER BY timestamp DESC 
-        LIMIT 100
-    ''')
-    connections = cursor.fetchall()
-    conn.close()
-    
-    # Format the data for display
-    result = []
-    for conn in connections:
-        event_type, remote_addr, run_id, visitor_ip, timestamp = conn
-        time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
         
-        if event_type == "connect" and remote_addr:
-            ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-            result.append([event_type, ip, port, run_id, time_str])
-        elif event_type == "disconnect" and run_id:
-            result.append([event_type, "", "", run_id, time_str])
-        elif event_type == "visit" and visitor_ip:
-            ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
-            result.append([event_type, ip, port, "", time_str])
-        else:
-            # Handle legacy data
-            if remote_addr:
+        # Check if the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='connections'")
+        if not cursor.fetchone():
+            conn.close()
+            return []  # Return empty list if table doesn't exist
+            
+        cursor.execute('''
+            SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
+            FROM connections 
+            ORDER BY timestamp DESC 
+            LIMIT 100
+        ''')
+        connections = cursor.fetchall()
+        conn.close()
+        
+        # Format the data for display
+        result = []
+        for conn in connections:
+            event_type, remote_addr, run_id, visitor_ip, timestamp = conn
+            time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            
+            if event_type == "connect" and remote_addr:
                 ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-                result.append([event_type, ip, port, run_id or "", time_str])
-    
-    return result
+                result.append([event_type, ip, port, run_id, time_str])
+            elif event_type == "disconnect" and run_id:
+                result.append([event_type, "", "", run_id, time_str])
+            elif event_type == "visit" and visitor_ip:
+                ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
+                result.append([event_type, ip, port, "", time_str])
+            else:
+                # Handle legacy data
+                if remote_addr:
+                    ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
+                    result.append([event_type, ip, port, run_id or "", time_str])
+        
+        return result
+    except Exception as e:
+        print(f"Error in get_ip_address_list: {e}")
+        return []  # Return empty list on error
 
 with gr.Blocks() as demo:
     with gr.Row():
