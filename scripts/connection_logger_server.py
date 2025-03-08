@@ -6,6 +6,9 @@ from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 import gradio as gr
+from typing import Optional
+from datetime import datetime
+import pandas as pd
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,45 +24,74 @@ DB_PATH = os.environ.get("GRADIO_DB_PATH", "gradio_connections.db")
 
 class ConnectionEvent(BaseModel):
     event_type: str
-    remote_addr: str
+    remote_addr: Optional[str] = None
+    run_id: Optional[str] = None
+    visitor_ip: Optional[str] = None
 
 def init_db():
-    """Initialize the SQLite database with a simple schema."""
+    """Initialize the SQLite database with a schema that supports the new fields."""
     os.makedirs(os.path.dirname(DB_PATH) if os.path.dirname(DB_PATH) else '.', exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS connections (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp INTEGER,
-        event_type TEXT,
-        remote_addr TEXT
-    )
-    ''')
+    
+    # Check if we need to update the schema
+    cursor.execute("PRAGMA table_info(connections)")
+    columns = [column[1] for column in cursor.fetchall()]
+    
+    if 'connections' not in columns:
+        # Create the table if it doesn't exist
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS connections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER,
+            event_type TEXT,
+            remote_addr TEXT,
+            run_id TEXT,
+            visitor_ip TEXT
+        )
+        ''')
+    else:
+        # Add new columns if they don't exist
+        if 'run_id' not in columns:
+            cursor.execute('ALTER TABLE connections ADD COLUMN run_id TEXT')
+        if 'visitor_ip' not in columns:
+            cursor.execute('ALTER TABLE connections ADD COLUMN visitor_ip TEXT')
+    
     conn.commit()
     conn.close()
     print(f"Database initialized at {DB_PATH}")
 
 @app.post("/log_connection")
 async def log_connection(event: ConnectionEvent):
-    """Log a connection event to the database."""
+    """Log a connection event to the database with the new fields."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
         cursor.execute('''
         INSERT INTO connections 
-        (timestamp, event_type, remote_addr)
-        VALUES (?, ?, ?)
+        (timestamp, event_type, remote_addr, run_id, visitor_ip)
+        VALUES (?, ?, ?, ?, ?)
         ''', (
             int(time.time()),
             event.event_type,
-            event.remote_addr
+            event.remote_addr,
+            event.run_id,
+            event.visitor_ip
         ))
         
         conn.commit()
         conn.close()
-        print(f"Logged {event.event_type} from {event.remote_addr}")
+        
+        log_message = f"Logged {event.event_type}"
+        if event.run_id:
+            log_message += f" - RunID: {event.run_id}"
+        if event.remote_addr:
+            log_message += f" - Remote: {event.remote_addr}"
+        if event.visitor_ip:
+            log_message += f" - Visitor IP: {event.visitor_ip}"
+        
+        print(log_message)
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to log connection: {str(e)}")
@@ -75,10 +107,7 @@ def read_db_and_plot_connections():
     with minute-by-minute connection counts for the last 15 minutes
     and hourly connection counts for the last 24 hours.
     Includes both total connections and unique connections.
-    """
-    import pandas as pd
-    from datetime import datetime
-    
+    """    
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -142,14 +171,40 @@ def read_db_and_plot_connections():
 def get_ip_address_list() -> list[list[str]]:
     """
     Read the connection data from the database and return a list of the last 
-    100 IP addresses and ports that have connected to the server.
+    100 connections with their details.
     """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT remote_addr FROM connections ORDER BY timestamp DESC LIMIT 100')
-    ip_addresses = cursor.fetchall()
+    cursor.execute('''
+        SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
+        FROM connections 
+        ORDER BY timestamp DESC 
+        LIMIT 100
+    ''')
+    connections = cursor.fetchall()
     conn.close()
-    return [ip[0].split(":") for ip in ip_addresses]
+    
+    # Format the data for display
+    result = []
+    for conn in connections:
+        event_type, remote_addr, run_id, visitor_ip, timestamp = conn
+        time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+        
+        if event_type == "connect" and remote_addr:
+            ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
+            result.append([event_type, ip, port, run_id, time_str])
+        elif event_type == "disconnect" and run_id:
+            result.append([event_type, "", "", run_id, time_str])
+        elif event_type == "visit" and visitor_ip:
+            ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
+            result.append([event_type, ip, port, "", time_str])
+        else:
+            # Handle legacy data
+            if remote_addr:
+                ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
+                result.append([event_type, ip, port, run_id or "", time_str])
+    
+    return result
 
 with gr.Blocks() as demo:
     with gr.Row():
@@ -171,7 +226,10 @@ with gr.Blocks() as demo:
 
 with demo.route("IP Addresses") as ip_route:
     with gr.Row():
-        ip_plot = gr.Dataframe(headers=["IP Address", "Port"], value=get_ip_address_list)
+        ip_plot = gr.Dataframe(
+            headers=["Event Type", "IP Address", "Port", "RunID", "Timestamp"], 
+            value=get_ip_address_list
+        )
     timer = gr.Timer()
     timer.tick(get_ip_address_list, None, ip_plot)
 
