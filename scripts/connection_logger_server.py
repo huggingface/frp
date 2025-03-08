@@ -9,6 +9,7 @@ import gradio as gr
 from typing import Optional
 from datetime import datetime
 import pandas as pd
+import numpy as np
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -125,6 +126,18 @@ def read_db_and_plot_connections():
     cursor.execute('SELECT timestamp, event_type, remote_addr FROM connections WHERE timestamp >= ? AND event_type = "connect"', 
                   (twenty_four_hours_ago,))
     daily_connections = cursor.fetchall()
+    
+    # Get connection durations for the last week
+    one_week_ago = current_time - (7 * 24 * 60 * 60)
+    cursor.execute('''
+        SELECT run_id, event_type, timestamp 
+        FROM connections 
+        WHERE timestamp >= ? AND run_id IS NOT NULL AND run_id != ""
+        AND event_type IN ("connect", "disconnect")
+        ORDER BY timestamp
+    ''', (one_week_ago,))
+    duration_data = cursor.fetchall()
+    
     conn.close()
 
     if not recent_connections:
@@ -166,8 +179,47 @@ def read_db_and_plot_connections():
         # Combine the dataframes
         connections_per_hour = pd.concat([total_per_hour, unique_per_hour], ignore_index=True)
         average_hour = total_per_hour['connections'].mean()
+
+    # Calculate connection durations
+    duration_df = pd.DataFrame(columns=['duration', 'connections'])
     
-    return average_minute, connections_per_minute, average_hour, connections_per_hour
+    if duration_data:
+        df_durations = pd.DataFrame(duration_data, columns=['run_id', 'event_type', 'timestamp'])
+        
+        # Group by run_id and get first connect and last disconnect
+        connect_events = df_durations[df_durations['event_type'] == 'connect'].groupby('run_id')['timestamp'].min()
+        disconnect_events = df_durations[df_durations['event_type'] == 'disconnect'].groupby('run_id')['timestamp'].max()
+        
+        # Find run_ids that have both connect and disconnect events
+        valid_run_ids = set(connect_events.index) & set(disconnect_events.index)
+        
+        if valid_run_ids:
+            # Calculate durations for valid run_ids
+            durations = []
+            for run_id in valid_run_ids:
+                connect_time = connect_events[run_id]
+                disconnect_time = disconnect_events[run_id]
+                if disconnect_time > connect_time:  # Ensure valid duration
+                    durations.append(disconnect_time - connect_time)
+            
+            if durations:
+                # Create histogram bins
+                bins = np.linspace(min(durations), max(durations), num=21)  # 21 edges for 20 bins
+                
+                # Bin the data
+                categories = pd.cut(durations, bins=bins, right=False)
+                histogram = pd.value_counts(categories, sort=False)
+                
+                # Format bin labels to be more readable (seconds)
+                bin_labels = [f"{int(b.left)}-{int(b.right)} sec" for b in histogram.index]
+                
+                # Create DataFrame for the bar plot
+                duration_df = pd.DataFrame({
+                    'duration': bin_labels,
+                    'connections': histogram.values
+                })
+
+    return average_minute, connections_per_minute, average_hour, connections_per_hour, duration_df
 
 def get_ip_address_list() -> list[list[str]]:
     """
@@ -216,14 +268,23 @@ with gr.Blocks() as demo:
         hour_bar_plot = gr.BarPlot(x="hour", y="connections", color="metric_type", 
                                    title="Connections per hour (last 24 hours)")
         average_hour = gr.Label(label="Average connections per hour")
+    
+    duration_plot = gr.BarPlot(
+        x="duration", 
+        y="connections", 
+        title="Connection Durations (last week)",
+        tooltip=["duration", "connections"],
+        y_lim=[0, None]
+    )
+
     demo.load(
         read_db_and_plot_connections, 
         None, 
-        [average_minute, minute_bar_plot, average_hour, hour_bar_plot]
+        [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot]
     )
 
     timer = gr.Timer()
-    timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot])
+    timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot])
 
 with demo.route("IP Addresses") as ip_route:
     with gr.Row():
