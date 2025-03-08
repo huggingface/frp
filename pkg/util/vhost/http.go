@@ -161,6 +161,11 @@ func (rp *HTTPReverseProxy) GetHeaders(domain, location, routeByHTTPUser string)
 
 // CreateConnection create a new connection by route config
 func (rp *HTTPReverseProxy) CreateConnection(domain, location, routeByHTTPUser string, remoteAddr string) (net.Conn, error) {
+	// Special case for stats.gradio.live
+	if domain == "stats.gradio.live" {
+		return net.Dial("tcp", "localhost:8765")
+	}
+
 	vr, ok := rp.getVhost(domain, location, routeByHTTPUser)
 	if ok {
 		fn := vr.payload.(*RouteConfig).CreateConnFn
