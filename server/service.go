@@ -473,6 +473,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 		payload := map[string]string{
 			"event_type": "connect",
 			"remote_addr": remoteAddr,
+			"run_id": loginMsg.RunID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
@@ -506,6 +507,31 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 	go func() {
 		// block until control closed
 		ctl.WaitClosed()
+		
+		// Log disconnection
+		go func() {
+			payload := map[string]string{
+				"event_type": "disconnect",
+				"run_id": loginMsg.RunID,
+			}
+			jsonData, err := json.Marshal(payload)
+			if err != nil {
+				log.Warn("Failed to marshal disconnection data: %v", err)
+				return
+			}
+			
+			resp, err := http.Post(
+				"http://127.0.0.1:8765/log_connection",
+				"application/json",
+				bytes.NewBuffer(jsonData),
+			)
+			if err != nil {
+				log.Warn("Failed to log disconnection: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+		}()
+		
 		svr.ctlManager.Del(loginMsg.RunID, ctl)
 	}()
 	return
