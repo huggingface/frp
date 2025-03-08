@@ -473,6 +473,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 		payload := map[string]string{
 			"event_type": "connect",
 			"remote_addr": remoteAddr,
+			"run_id": loginMsg.RunID,
 		}
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
