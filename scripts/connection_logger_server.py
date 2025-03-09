@@ -304,22 +304,22 @@ def get_ip_address_list() -> list[list[str]]:
 
 with gr.Blocks() as demo:
     with gr.Row():
-        minute_bar_plot = gr.BarPlot(x="minute", y="connections", color="metric_type", 
-                                     title="Connections per minute (last 15 minutes)")
-        average_minute = gr.Label(label="Average connections per minute")
-    with gr.Row():
-        hour_bar_plot = gr.BarPlot(x="hour", y="connections", color="metric_type", 
-                                   title="Connections per hour (last 24 hours)")
-        average_hour = gr.Label(label="Average connections per hour")
+        with gr.Column():
+            minute_bar_plot = gr.BarPlot(x="minute", y="connections", color="metric_type", 
+                                         title="Connections per minute (last 15 minutes)")
+            hour_bar_plot = gr.BarPlot(x="hour", y="connections", color="metric_type", 
+                                    title="Connections per hour (last 24 hours)")
+        with gr.Column():            
+            average_minute = gr.Label(label="Average connections per minute")
+            average_hour = gr.Label(label="Average connections per hour")
+            num_connections = gr.Label(label="Number of active connections")
     
-    with gr.Row():
-        duration_plot = gr.BarPlot(
-            x="duration", 
-            y="connections", 
-            title="Connection Durations (last week)",
-            tooltip=["duration", "connections"],
-        )
-        num_connections = gr.Label(label="Number of active connections")
+    duration_plot = gr.BarPlot(
+        x="duration", 
+        y="connections", 
+        title="Connection Durations (last week)",
+        tooltip=["duration", "connections"],
+    )
 
     demo.load(
         read_db_and_plot_connections, 
