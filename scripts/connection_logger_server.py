@@ -252,7 +252,17 @@ def read_db_and_plot_connections():
                     'connections': binned_data
                 })
 
-    return average_minute, connections_per_minute, average_hour, connections_per_hour, duration_df
+    # Calculate number of active connections using the already fetched duration_data
+    active_connections = {}
+    for run_id, event_type, timestamp in duration_data:
+        if event_type == "connect":
+            active_connections[run_id] = timestamp
+        elif event_type == "disconnect" and run_id in active_connections:
+            del active_connections[run_id]
+    
+    num_connections = len(active_connections)
+
+    return average_minute, connections_per_minute, average_hour, connections_per_hour, duration_df, num_connections 
 
 def get_ip_address_list() -> list[list[str]]:
     """
@@ -302,21 +312,23 @@ with gr.Blocks() as demo:
                                    title="Connections per hour (last 24 hours)")
         average_hour = gr.Label(label="Average connections per hour")
     
-    duration_plot = gr.BarPlot(
-        x="duration", 
-        y="connections", 
-        title="Connection Durations (last week)",
-        tooltip=["duration", "connections"],
-    )
+    with gr.Row():
+        duration_plot = gr.BarPlot(
+            x="duration", 
+            y="connections", 
+            title="Connection Durations (last week)",
+            tooltip=["duration", "connections"],
+        )
+        num_connections = gr.Label(label="Number of active connections")
 
     demo.load(
         read_db_and_plot_connections, 
         None, 
-        [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot]
+        [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot, num_connections]
     )
 
     timer = gr.Timer()
-    timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot])
+    timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot, num_connections])
 
 with demo.route("IP Addresses") as ip_route:
     with gr.Row():
