@@ -114,6 +114,10 @@ def read_db_and_plot_connections():
     Includes both total connections and unique connections.
     Only counts "connect" events.
     """    
+    # Ensure database is initialized
+    if not os.path.exists(DB_PATH) or os.path.getsize(DB_PATH) == 0:
+        init_db()
+        
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
@@ -273,6 +277,10 @@ def get_ip_address_list() -> list[list[str]]:
     Read the connection data from the database and return a list of the last 
     100 connections with their details.
     """
+    # Ensure database is initialized
+    if not os.path.exists(DB_PATH) or os.path.getsize(DB_PATH) == 0:
+        init_db()
+        
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
@@ -356,6 +364,10 @@ def create_map_data():
     return df, lons, lats
 
 def create_map():
+    # Ensure database is initialized
+    if not os.path.exists(DB_PATH) or os.path.getsize(DB_PATH) == 0:
+        init_db()
+        
     connection_data = get_ip_address_list()
     get_active_ip_addresses(connection_data)
     df, lons, lats = create_map_data()
