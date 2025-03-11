@@ -150,7 +150,7 @@ def read_db_and_plot_connections():
 
     if not recent_connections:
         connections_per_minute = pd.DataFrame(columns=['minute', 'connections', 'metric_type'])
-        average_minute = 0
+        average_minute = 0.0
     else:
         df_minutes = pd.DataFrame(recent_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_minutes['datetime'] = df_minutes['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
@@ -166,11 +166,11 @@ def read_db_and_plot_connections():
         
         # Combine the dataframes
         connections_per_minute = pd.concat([total_per_minute, unique_per_minute], ignore_index=True)
-        average_minute = total_per_minute['connections'].mean()
+        average_minute = float(total_per_minute['connections'].mean())
 
     if not daily_connections:
         connections_per_hour = pd.DataFrame(columns=['hour', 'connections', 'metric_type'])
-        average_hour = 0
+        average_hour = 0.0
     else:
         df_hours = pd.DataFrame(daily_connections, columns=['timestamp', 'event_type', 'remote_addr'])
         df_hours['datetime'] = df_hours['timestamp'].apply(lambda x: datetime.fromtimestamp(x))
@@ -186,7 +186,7 @@ def read_db_and_plot_connections():
         
         # Combine the dataframes
         connections_per_hour = pd.concat([total_per_hour, unique_per_hour], ignore_index=True)
-        average_hour = total_per_hour['connections'].mean()
+        average_hour = float(total_per_hour['connections'].mean())
 
     # Calculate connection durations
     duration_df = pd.DataFrame(columns=['duration', 'connections'])
