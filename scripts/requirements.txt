@@ -1,3 +1,6 @@
 gradio
 pydantic
-
+plotly
+pandas 
+numpy
+pycountry
