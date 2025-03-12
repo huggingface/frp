@@ -413,14 +413,28 @@ def create_map_data(new_connections):
     lons = []
     lats = []
     
-    # Process active connections for choropleth
-    for location in active_connections.values():
-        if location is None or "country" not in location:
+    # Get the last 1000 connection records from the database
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT country 
+        FROM connections 
+        WHERE event_type = "connect" AND country IS NOT NULL
+        ORDER BY timestamp DESC 
+        LIMIT 1000
+    ''')
+    country_data = cursor.fetchall()
+    conn.close()
+    
+    # Count connections by country
+    for country_record in country_data:
+        country = country_record[0]
+        if not country:
             continue
-        if location["country"] not in countries_counts:
-            countries_counts[location["country"]] = 1
+        if country not in countries_counts:
+            countries_counts[country] = 1
         else:
-            countries_counts[location["country"]] += 1
+            countries_counts[country] += 1
     
     # Process new connections for scatter points
     for location in new_connections:
