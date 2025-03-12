@@ -316,6 +316,8 @@ def get_ip_address_list() -> list[list[str]]:
     
     return result
 
+IP_API_KEY = os.environ.get("IP_API_KEY")
+
 active_connections = {}
 
 def get_location(ip):
