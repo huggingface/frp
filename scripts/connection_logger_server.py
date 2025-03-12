@@ -438,8 +438,7 @@ def create_map():
         ),
         margin=dict(l=0, r=0, t=0, b=0),  
         # autosize=True,  
-        height=1000,  
-        # width=1000, 
+        width=1000, 
         plot_bgcolor='rgb(250, 250, 250)',
         dragmode=False
     )
