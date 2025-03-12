@@ -533,26 +533,34 @@ map_demo_css = """
 }
 
 @keyframes pulse {
-  0%, 100% {
-    fill: #34a639;
+  0% {
+    fill: #ff7c0a;
     fill-opacity: 0;
     stroke-opacity: 0;
     stroke-width: 1px;
-    stroke: #34a639;
-    }
+    stroke: #ff7c0a;
+  }
 
-    50% {
-        fill: #34a639;
-        fill-opacity: 1;
-        stroke-opacity: 1;
-        stroke-width: 12px;
-        stroke: #34a639;
-    }
+  50% {
+    fill: #ff7c0a;
+    fill-opacity: 1;
+    stroke-opacity: 1;
+    stroke-width: 12px;
+    stroke: #ff7c0a;
+  }
+  
+  100% {
+    fill: #ff7c0a;
+    fill-opacity: 0;
+    stroke-opacity: 0;
+    stroke-width: 1px;
+    stroke: #ff7c0a;
+  }
 }
 
 /* Apply the animation to each point */
 .point {
-  animation: pulse 3s infinite ease-in-out;
+  animation: pulse 1s 1 ease-in-out;
   transform-origin: center;
   transform-box: fill-box;
 }
