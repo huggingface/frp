@@ -361,29 +361,47 @@ def update_connection_location(conn_id, location):
 
 def get_active_ip_addresses(connection_data):
     new_connections = []
+    current_time = int(time.time())
+    fifteen_seconds_ago = current_time - 15
     
     for event in connection_data:
-        conn_id, event_type, ip, port, run_id, timestamp, lat, lon, country = event
+        conn_id, event_type, ip, port, run_id, timestamp_str, lat, lon, country = event
+        
+        # Convert timestamp string to unix timestamp
+        timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S').timestamp()
         
         if event_type == "connect":
-            # Check if this is a new connection (no location data)
-            if lat is None or lon is None or country is None:
-                location = get_location(ip)
-                if location:
-                    # Update the database with the location information
-                    update_connection_location(conn_id, location)
-                    # Add to new connections for map display
+            # Check if this connection happened in the last 15 seconds
+            if timestamp >= fifteen_seconds_ago:
+                # If no location data, try to get it
+                if lat is None or lon is None or country is None:
+                    location = get_location(ip)
+                    if location:
+                        # Update the database with the location information
+                        update_connection_location(conn_id, location)
+                        # Add to recent connections for map display
+                        new_connections.append(location)
+                        # Also track in active connections
+                        active_connections[run_id] = location
+                else:
+                    # Already has location data, add to recent connections
+                    location = {
+                        "ip": ip,
+                        "lat": lat,
+                        "lon": lon,
+                        "country": country
+                    }
                     new_connections.append(location)
-                    # Also track in active connections
                     active_connections[run_id] = location
             else:
-                # Already has location data, just add to active connections
-                active_connections[run_id] = {
-                    "ip": ip,
-                    "lat": lat,
-                    "lon": lon,
-                    "country": country
-                }
+                # Older connection, just track in active connections if it has location data
+                if lat is not None and lon is not None and country is not None:
+                    active_connections[run_id] = {
+                        "ip": ip,
+                        "lat": lat,
+                        "lon": lon,
+                        "country": country
+                    }
         elif event_type == "disconnect":
             if run_id in active_connections:
                 del active_connections[run_id]
