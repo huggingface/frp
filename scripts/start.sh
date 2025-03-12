@@ -36,15 +36,6 @@ export GRADIO_DB_PATH="/home/ubuntu/frp/gradio_connections.db"
 echo "Starting connection logger server..."
 nohup python /home/ubuntu/frp/scripts/connection_logger_server.py > /home/ubuntu/frp/connection_logger.log 2>&1 &
 
-# Wait a moment to ensure the server starts
-sleep 2
-
-# Check if the server started successfully
-if ! curl -s http://127.0.0.1:8765/health > /dev/null; then
-    echo "Warning: Connection logger server failed to start."
-else
-    echo "Connection logger server started successfully."
-fi
 
 if [[ "$RESTART_LOGGER_ONLY" == "false" ]]; then
     sudo docker run --log-opt max-size=100m --memory=28G --cpus=6 --name frps3 -d --restart unless-stopped --network host -v ~/frp/combined:/etc/frp frps:0.2 -c /etc/frp/frps_tls.ini
