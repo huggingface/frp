@@ -438,7 +438,7 @@ def create_map():
         ),
         margin=dict(l=0, r=0, t=0, b=0),  
         # autosize=True,  
-        # height=1000,  
+        height=1000,  
         # width=1000, 
         plot_bgcolor='rgb(250, 250, 250)',
         dragmode=False
@@ -527,13 +527,7 @@ with demo.route("Map") as ip_route:
             show_label=False,
             every=1
         )
-    # with gr.Row():
-    #     ip_plot = gr.Dataframe(
-    #         headers=["Event Type", "IP Address", "Port", "RunID", "Timestamp"], 
-    #         value=get_ip_address_list
-    #     )
     timer = gr.Timer()
-    # timer.tick(get_ip_address_list, None, ip_plot)
 
 complete_app = gr.mount_gradio_app(app, demo, path="/")
 
