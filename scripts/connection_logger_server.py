@@ -13,7 +13,9 @@ import numpy as np
 import plotly.graph_objects as go
 import requests
 import pycountry
+from dotenv import load_dotenv
 
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -314,13 +316,10 @@ def get_ip_address_list() -> list[list[str]]:
     
     return result
 
-# IP_API_KEY = os.environ.get("IP_API_KEY")
-
 active_connections = {}
 
 def get_location(ip):
-    print(">>>>>", f"http://ip-api.com/json/{ip}")
-    response = requests.get(f"http://ip-api.com/json/{ip}")
+    response = requests.get(f"https://pro.ip-api.com/json/{ip}?key={IP_API_KEY}")
     data = response.json()
     if "bogon" in data:
         return None
