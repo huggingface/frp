@@ -361,9 +361,15 @@ def update_connection_location(conn_id, location):
 
 def get_active_ip_addresses(connection_data):
     new_connections = []
+    recent_connections = []
+    current_time = int(time.time())
+    fifteen_seconds_ago = current_time - 15
     
     for event in connection_data:
-        conn_id, event_type, ip, port, run_id, timestamp, lat, lon, country = event
+        conn_id, event_type, ip, port, run_id, timestamp_str, lat, lon, country = event
+        
+        # Convert timestamp string to timestamp
+        timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S').timestamp()
         
         if event_type == "connect":
             # Check if this is a new connection (no location data)
@@ -376,21 +382,31 @@ def get_active_ip_addresses(connection_data):
                     new_connections.append(location)
                     # Also track in active connections
                     active_connections[run_id] = location
+                    
+                    # If it's also recent, add to recent connections
+                    if timestamp >= fifteen_seconds_ago:
+                        recent_connections.append(location)
             else:
-                # Already has location data, just add to active connections
-                active_connections[run_id] = {
+                # Already has location data
+                location = {
                     "ip": ip,
                     "lat": lat,
                     "lon": lon,
                     "country": country
                 }
+                # Add to active connections
+                active_connections[run_id] = location
+                
+                # If it's recent, add to recent connections
+                if timestamp >= fifteen_seconds_ago:
+                    recent_connections.append(location)
         elif event_type == "disconnect":
             if run_id in active_connections:
                 del active_connections[run_id]
     
-    return new_connections
+    return new_connections, recent_connections
 
-def create_map_data(new_connections):
+def create_map_data(new_connections, recent_connections):
     countries_counts = {}
     lons = []
     lats = []
@@ -404,8 +420,8 @@ def create_map_data(new_connections):
         else:
             countries_counts[location["country"]] += 1
     
-    # Process new connections for scatter points
-    for location in new_connections:
+    # Process recent connections for scatter points
+    for location in recent_connections:
         if location is None:
             continue
         lons.append(location["lon"])
@@ -423,8 +439,8 @@ def create_map():
         init_db()
         
     connection_data = get_ip_address_list()
-    new_connections = get_active_ip_addresses(connection_data)
-    df, lons, lats = create_map_data(new_connections)
+    new_connections, recent_connections = get_active_ip_addresses(connection_data)
+    df, lons, lats = create_map_data(new_connections, recent_connections)
 
     fig = go.Figure()
     
@@ -444,7 +460,7 @@ def create_map():
         hoverinfo='text+z'
     ))
     
-    # Only add scatter points for new connections
+    # Only add scatter points for recent connections
     if lons and lats:
         scatter = go.Scattergeo(
             lon=lons,
@@ -461,8 +477,8 @@ def create_map():
                 ),
             ),
             customdata=["dot-" + str(i) for i in range(len(lons))],
-            hovertemplate="New connection %{customdata}<extra></extra>",
-            name='New Connections'
+            hovertemplate="Recent connection %{customdata}<extra></extra>",
+            name='Recent Connections'
         )
         
         fig.add_trace(scatter)
