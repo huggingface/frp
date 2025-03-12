@@ -361,15 +361,9 @@ def update_connection_location(conn_id, location):
 
 def get_active_ip_addresses(connection_data):
     new_connections = []
-    recent_connections = []
-    current_time = int(time.time())
-    fifteen_seconds_ago = current_time - 15
     
     for event in connection_data:
-        conn_id, event_type, ip, port, run_id, timestamp_str, lat, lon, country = event
-        
-        # Convert timestamp string to timestamp
-        timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S').timestamp()
+        conn_id, event_type, ip, port, run_id, timestamp, lat, lon, country = event
         
         if event_type == "connect":
             # Check if this is a new connection (no location data)
@@ -382,31 +376,21 @@ def get_active_ip_addresses(connection_data):
                     new_connections.append(location)
                     # Also track in active connections
                     active_connections[run_id] = location
-                    
-                    # If it's also recent, add to recent connections
-                    if timestamp >= fifteen_seconds_ago:
-                        recent_connections.append(location)
             else:
-                # Already has location data
-                location = {
+                # Already has location data, just add to active connections
+                active_connections[run_id] = {
                     "ip": ip,
                     "lat": lat,
                     "lon": lon,
                     "country": country
                 }
-                # Add to active connections
-                active_connections[run_id] = location
-                
-                # If it's recent, add to recent connections
-                if timestamp >= fifteen_seconds_ago:
-                    recent_connections.append(location)
         elif event_type == "disconnect":
             if run_id in active_connections:
                 del active_connections[run_id]
     
-    return new_connections, recent_connections
+    return new_connections
 
-def create_map_data(new_connections, recent_connections):
+def create_map_data(new_connections):
     countries_counts = {}
     lons = []
     lats = []
@@ -420,8 +404,8 @@ def create_map_data(new_connections, recent_connections):
         else:
             countries_counts[location["country"]] += 1
     
-    # Process recent connections for scatter points
-    for location in recent_connections:
+    # Process new connections for scatter points
+    for location in new_connections:
         if location is None:
             continue
         lons.append(location["lon"])
@@ -439,8 +423,8 @@ def create_map():
         init_db()
         
     connection_data = get_ip_address_list()
-    new_connections, recent_connections = get_active_ip_addresses(connection_data)
-    df, lons, lats = create_map_data(new_connections, recent_connections)
+    new_connections = get_active_ip_addresses(connection_data)
+    df, lons, lats = create_map_data(new_connections)
 
     fig = go.Figure()
     
@@ -460,7 +444,7 @@ def create_map():
         hoverinfo='text+z'
     ))
     
-    # Only add scatter points for recent connections
+    # Only add scatter points for new connections
     if lons and lats:
         scatter = go.Scattergeo(
             lon=lons,
@@ -477,8 +461,8 @@ def create_map():
                 ),
             ),
             customdata=["dot-" + str(i) for i in range(len(lons))],
-            hovertemplate="Recent connection %{customdata}<extra></extra>",
-            name='Recent Connections'
+            hovertemplate="New connection %{customdata}<extra></extra>",
+            name='New Connections'
         )
         
         fig.add_trace(scatter)
@@ -533,34 +517,26 @@ map_demo_css = """
 }
 
 @keyframes pulse {
-  0% {
-    fill: #ff7c0a;
+  0%, 100% {
+    fill: #34a639;
     fill-opacity: 0;
     stroke-opacity: 0;
     stroke-width: 1px;
-    stroke: #ff7c0a;
-  }
+    stroke: #34a639;
+    }
 
-  50% {
-    fill: #ff7c0a;
-    fill-opacity: 1;
-    stroke-opacity: 1;
-    stroke-width: 12px;
-    stroke: #ff7c0a;
-  }
-  
-  100% {
-    fill: #ff7c0a;
-    fill-opacity: 0;
-    stroke-opacity: 0;
-    stroke-width: 1px;
-    stroke: #ff7c0a;
-  }
+    50% {
+        fill: #34a639;
+        fill-opacity: 1;
+        stroke-opacity: 1;
+        stroke-width: 12px;
+        stroke: #34a639;
+    }
 }
 
 /* Apply the animation to each point */
 .point {
-  animation: pulse 1s 1 ease-in-out;
+  animation: pulse 3s infinite ease-in-out;
   transform-origin: center;
   transform-box: fill-box;
 }
