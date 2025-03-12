@@ -54,7 +54,10 @@ def init_db():
             event_type TEXT,
             remote_addr TEXT,
             run_id TEXT,
-            visitor_ip TEXT
+            visitor_ip TEXT,
+            lat REAL,
+            lon REAL,
+            country TEXT
         )
         ''')
     else:
@@ -63,6 +66,12 @@ def init_db():
             cursor.execute('ALTER TABLE connections ADD COLUMN run_id TEXT')
         if 'visitor_ip' not in columns:
             cursor.execute('ALTER TABLE connections ADD COLUMN visitor_ip TEXT')
+        if 'lat' not in columns:
+            cursor.execute('ALTER TABLE connections ADD COLUMN lat REAL')
+        if 'lon' not in columns:
+            cursor.execute('ALTER TABLE connections ADD COLUMN lon REAL')
+        if 'country' not in columns:
+            cursor.execute('ALTER TABLE connections ADD COLUMN country TEXT')
     
     conn.commit()
     conn.close()
@@ -286,7 +295,7 @@ def get_ip_address_list() -> list[list[str]]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT event_type, remote_addr, run_id, visitor_ip, timestamp 
+        SELECT id, event_type, remote_addr, run_id, visitor_ip, timestamp, lat, lon, country 
         FROM connections 
         ORDER BY timestamp DESC 
         LIMIT 100
@@ -297,22 +306,22 @@ def get_ip_address_list() -> list[list[str]]:
     # Format the data for display
     result = []
     for conn in connections:
-        event_type, remote_addr, run_id, visitor_ip, timestamp = conn
+        id, event_type, remote_addr, run_id, visitor_ip, timestamp, lat, lon, country = conn
         time_str = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
         
         if event_type == "connect" and remote_addr:
             ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-            result.append([event_type, ip, port, run_id, time_str])
+            result.append([id, event_type, ip, port, run_id, time_str, lat, lon, country])
         elif event_type == "disconnect" and run_id:
-            result.append([event_type, "", "", run_id, time_str])
+            result.append([id, event_type, "", "", run_id, time_str, lat, lon, country])
         elif event_type == "visit" and visitor_ip:
             ip, port = visitor_ip.split(":") if ":" in visitor_ip else (visitor_ip, "")
-            result.append([event_type, ip, port, "", time_str])
+            result.append([id, event_type, ip, port, "", time_str, lat, lon, country])
         else:
             # Handle legacy data
             if remote_addr:
                 ip, port = remote_addr.split(":") if ":" in remote_addr else (remote_addr, "")
-                result.append([event_type, ip, port, run_id or "", time_str])
+                result.append([id, event_type, ip, port, run_id or "", time_str, lat, lon, country])
     
     return result
 
@@ -335,27 +344,70 @@ def get_location(ip):
         "country": pycountry.countries.get(alpha_2=data["countryCode"]).alpha_3
     }
 
-def get_active_ip_addresses(connection_data):  
+def update_connection_location(conn_id, location):
+    """Update the database with location information for a connection."""
+    if location is None:
+        return
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE connections 
+        SET lat = ?, lon = ?, country = ? 
+        WHERE id = ?
+    ''', (location["lat"], location["lon"], location["country"], conn_id))
+    conn.commit()
+    conn.close()
+
+def get_active_ip_addresses(connection_data):
+    new_connections = []
+    
     for event in connection_data:
-        event_type, ip, port, run_id, timestamp = event
+        conn_id, event_type, ip, port, run_id, timestamp, lat, lon, country = event
+        
         if event_type == "connect":
-            if run_id not in active_connections:
-                active_connections[run_id] = get_location(ip)
+            # Check if this is a new connection (no location data)
+            if lat is None or lon is None or country is None:
+                location = get_location(ip)
+                if location:
+                    # Update the database with the location information
+                    update_connection_location(conn_id, location)
+                    # Add to new connections for map display
+                    new_connections.append(location)
+                    # Also track in active connections
+                    active_connections[run_id] = location
+            else:
+                # Already has location data, just add to active connections
+                active_connections[run_id] = {
+                    "ip": ip,
+                    "lat": lat,
+                    "lon": lon,
+                    "country": country
+                }
         elif event_type == "disconnect":
             if run_id in active_connections:
                 del active_connections[run_id]
+    
+    return new_connections
 
-def create_map_data():
+def create_map_data(new_connections):
     countries_counts = {}
     lons = []
     lats = []
+    
+    # Process active connections for choropleth
     for location in active_connections.values():
-        if location is None:
+        if location is None or "country" not in location:
             continue
         if location["country"] not in countries_counts:
             countries_counts[location["country"]] = 1
         else:
             countries_counts[location["country"]] += 1
+    
+    # Process new connections for scatter points
+    for location in new_connections:
+        if location is None:
+            continue
         lons.append(location["lon"])
         lats.append(location["lat"])
     
@@ -371,8 +423,8 @@ def create_map():
         init_db()
         
     connection_data = get_ip_address_list()
-    get_active_ip_addresses(connection_data)
-    df, lons, lats = create_map_data()
+    new_connections = get_active_ip_addresses(connection_data)
+    df, lons, lats = create_map_data(new_connections)
 
     fig = go.Figure()
     
@@ -392,26 +444,28 @@ def create_map():
         hoverinfo='text+z'
     ))
     
-    scatter = go.Scattergeo(
-        lon=lons,
-        lat=lats,
-        mode='markers',
-        marker=dict(
-            size=10,
-            color='rgb(0, 100, 255)',
-            opacity=0.8,
-            symbol='circle',
-            line=dict(
-                width=1,
-                color='rgba(0, 0, 255, 1)'
+    # Only add scatter points for new connections
+    if lons and lats:
+        scatter = go.Scattergeo(
+            lon=lons,
+            lat=lats,
+            mode='markers',
+            marker=dict(
+                size=10,
+                color='rgb(0, 100, 255)',
+                opacity=0.8,
+                symbol='circle',
+                line=dict(
+                    width=1,
+                    color='rgba(0, 0, 255, 1)'
+                ),
             ),
-        ),
-        customdata=["dot-" + str(i) for i in range(len(lons))],
-        hovertemplate="Location %{customdata}<extra></extra>",
-        name='Locations'
-    )
-    
-    fig.add_trace(scatter)
+            customdata=["dot-" + str(i) for i in range(len(lons))],
+            hovertemplate="New connection %{customdata}<extra></extra>",
+            name='New Connections'
+        )
+        
+        fig.add_trace(scatter)
 
     fig.update_layout(
         geo=dict(
