@@ -490,7 +490,7 @@ map_demo_css = """
 
 """
 
-with gr.Blocks(css=map_demo_css) as demo:
+with gr.Blocks(css=map_demo_css, fill_width=True, fill_height=True) as demo:
     with gr.Row():
         with gr.Column():
             minute_bar_plot = gr.BarPlot(x="minute", y="connections", color="metric_type", 
