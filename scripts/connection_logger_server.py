@@ -458,18 +458,23 @@ def create_map():
     new_connections = get_active_ip_addresses(connection_data)
     df, lons, lats = create_map_data(new_connections)
 
+    # Apply a logarithmic transformation to the data to better handle skewed distributions
+    if not df.empty:
+        df['log_count'] = np.log1p(df['ip_count'])  # log1p = log(1+x) to handle zeros
+    
     fig = go.Figure()
     
     fig.add_trace(go.Choropleth(
         locations=df['country'],
-        z=df['ip_count'],
+        z=df['ip_count'] if df.empty else df['log_count'],
         text=df['country'].astype(str) + ': ' + df['ip_count'].astype(str) + ' IPs',
         colorscale=[
-            [0, 'rgb(220, 50, 50)'],     # Darker starting color (lightest shade)
-            [0.25, 'rgb(200, 30, 30)'],  
-            [0.5, 'rgb(180, 20, 20)'],
-            [0.75, 'rgb(150, 10, 10)'],
-            [1, 'rgb(120, 0, 0)']        # Darkest shade for highest values
+            [0, 'rgb(220, 100, 100)'],    # Lighter red but still visible
+            [0.2, 'rgb(200, 70, 70)'],    
+            [0.4, 'rgb(180, 40, 40)'],
+            [0.6, 'rgb(160, 20, 20)'],
+            [0.8, 'rgb(140, 10, 10)'],
+            [1, 'rgb(120, 0, 0)']         # Darkest red
         ],
         showscale=False,
         marker=dict(
