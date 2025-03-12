@@ -319,6 +319,7 @@ def get_ip_address_list() -> list[list[str]]:
 active_connections = {}
 
 def get_location(ip):
+    print(">>>>>", f"http://ip-api.com/json/{ip}")
     response = requests.get(f"http://ip-api.com/json/{ip}")
     data = response.json()
     if "bogon" in data:
