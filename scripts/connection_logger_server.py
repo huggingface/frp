@@ -592,7 +592,7 @@ map_demo_css = """
 
 /* Apply the animation to each point */
 .point {
-  animation: pulse 1s 1 ease-in-out forwards;
+  animation: pulse 2s 1 ease-in-out forwards;
   transform-origin: center;
   transform-box: fill-box;
 }
@@ -633,7 +633,7 @@ with demo.route("Map") as ip_route:
             value=create_map,
             container=False,
             show_label=False,
-            every=1
+            every=2
         )
     timer = gr.Timer()
 
