@@ -469,12 +469,17 @@ def create_map():
         z=df['ip_count'] if df.empty else df['log_count'],
         text=df['country'].astype(str) + ': ' + df['ip_count'].astype(str) + ' IPs',
         colorscale=[
-            [0, 'rgb(220, 100, 100)'],    # Lighter red but still visible
-            [0.2, 'rgb(200, 70, 70)'],    
-            [0.4, 'rgb(180, 40, 40)'],
-            [0.6, 'rgb(160, 20, 20)'],
-            [0.8, 'rgb(140, 10, 10)'],
-            [1, 'rgb(120, 0, 0)']         # Darkest red
+            [0.0, 'rgb(220, 100, 100)'],  # Lightest red (still visible)
+            [0.1, 'rgb(215, 90, 90)'],
+            [0.2, 'rgb(210, 80, 80)'],
+            [0.3, 'rgb(200, 70, 70)'],
+            [0.4, 'rgb(190, 60, 60)'],
+            [0.5, 'rgb(180, 50, 50)'],
+            [0.6, 'rgb(170, 40, 40)'],
+            [0.7, 'rgb(160, 30, 30)'],
+            [0.8, 'rgb(150, 20, 20)'],
+            [0.9, 'rgb(140, 10, 10)'],
+            [1.0, 'rgb(120, 0, 0)']       # Darkest red
         ],
         showscale=False,
         marker=dict(
