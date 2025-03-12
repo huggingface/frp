@@ -464,7 +464,13 @@ def create_map():
         locations=df['country'],
         z=df['ip_count'],
         text=df['country'].astype(str) + ': ' + df['ip_count'].astype(str) + ' IPs',
-        colorscale='Reds',
+        colorscale=[
+            [0, 'rgb(180, 0, 0)'],     # Darker starting color
+            [0.2, 'rgb(220, 20, 20)'],  
+            [0.5, 'rgb(250, 50, 50)'],
+            [0.8, 'rgb(250, 100, 100)'],
+            [1, 'rgb(250, 150, 150)']   # Still lighter for highest values
+        ],
         showscale=False,
         marker=dict(
             line=dict(
