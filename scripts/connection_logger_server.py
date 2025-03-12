@@ -577,7 +577,7 @@ with demo.route("Map") as ip_route:
             value=create_map,
             container=False,
             show_label=False,
-            every=2
+            every=4
         )
     timer = gr.Timer()
 
