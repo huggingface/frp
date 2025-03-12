@@ -314,12 +314,12 @@ def get_ip_address_list() -> list[list[str]]:
     
     return result
 
-IP_API_KEY = os.environ.get("IP_API_KEY")
+# IP_API_KEY = os.environ.get("IP_API_KEY")
 
 active_connections = {}
 
 def get_location(ip):
-    response = requests.get(f"https://pro.ip-api.com/json/{ip}?key={IP_API_KEY}")
+    response = requests.get(f"https://ip-api.com/json/{ip}")
     data = response.json()
     if "bogon" in data:
         return None
@@ -377,7 +377,7 @@ def create_map():
     fig.add_trace(go.Choropleth(
         locations=df['country'],
         z=df['ip_count'],
-        text=df['country'] + ': ' + df['ip_count'].astype(str) + ' IPs',
+        text=df['country'].astype(str) + ': ' + df['ip_count'].astype(str) + ' IPs',
         colorscale='Reds',
         showscale=False,
         marker=dict(
