@@ -520,20 +520,20 @@ with gr.Blocks(css=map_demo_css) as demo:
     timer = gr.Timer()
     timer.tick(read_db_and_plot_connections, None, [average_minute, minute_bar_plot, average_hour, hour_bar_plot, duration_plot, num_connections])
 
-with demo.route("IP Addresses") as ip_route:
+with demo.route("Map") as ip_route:
     map_plot = gr.Plot(
             value=create_map,
             container=False,
             show_label=False,
             every=1
         )
-    with gr.Row():
-        ip_plot = gr.Dataframe(
-            headers=["Event Type", "IP Address", "Port", "RunID", "Timestamp"], 
-            value=get_ip_address_list
-        )
+    # with gr.Row():
+    #     ip_plot = gr.Dataframe(
+    #         headers=["Event Type", "IP Address", "Port", "RunID", "Timestamp"], 
+    #         value=get_ip_address_list
+    #     )
     timer = gr.Timer()
-    timer.tick(get_ip_address_list, None, ip_plot)
+    # timer.tick(get_ip_address_list, None, ip_plot)
 
 complete_app = gr.mount_gradio_app(app, demo, path="/")
 
