@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -217,6 +218,8 @@ func NewService(cfg config.ServerCommonConf) (svr *Service, err error) {
 	if cfg.VhostHTTPPort > 0 {
 		rp := vhost.NewHTTPReverseProxy(vhost.HTTPReverseProxyOptions{
 			ResponseHeaderTimeoutS: cfg.VhostHTTPTimeout,
+			LoggerSubdomain:        cfg.LoggerSubdomain,
+			LoggerPort:             cfg.LoggerPort,
 		}, svr.httpVhostRouter)
 		svr.rc.HTTPReverseProxy = rp
 
@@ -465,6 +468,36 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 		return
 	}
 
+	// Log connection to logger server if configured
+	if svr.cfg.LoggerSubdomain != "" && svr.cfg.LoggerPort > 0 {
+		remoteAddr := ctlConn.RemoteAddr().String()
+		go func() {
+			// Create JSON payload
+			payload := map[string]string{
+				"event_type": "connect",
+				"remote_addr": remoteAddr,
+				"run_id": loginMsg.RunID,
+			}
+			jsonData, err := json.Marshal(payload)
+			if err != nil {
+				log.Warn("Failed to marshal connection data: %v", err)
+				return
+			}
+			
+			// Send HTTP request to logger server
+			resp, err := http.Post(
+				fmt.Sprintf("http://localhost:%d/log_connection", svr.cfg.LoggerPort),
+				"application/json",
+				bytes.NewBuffer(jsonData),
+			)
+			if err != nil {
+				log.Warn("Failed to log connection: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+		}()
+	}
+
 	ctl := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, svr.authVerifier, ctlConn, loginMsg, svr.cfg)
 	if oldCtl := svr.ctlManager.Add(loginMsg.RunID, ctl); oldCtl != nil {
 		oldCtl.allShutdown.WaitDone()
@@ -478,6 +511,33 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login) (err 
 	go func() {
 		// block until control closed
 		ctl.WaitClosed()
+		
+		// Log disconnection if logger is configured
+		if svr.cfg.LoggerSubdomain != "" && svr.cfg.LoggerPort > 0 {
+			go func() {
+				payload := map[string]string{
+					"event_type": "disconnect",
+					"run_id": loginMsg.RunID,
+				}
+				jsonData, err := json.Marshal(payload)
+				if err != nil {
+					log.Warn("Failed to marshal disconnection data: %v", err)
+					return
+				}
+				
+				resp, err := http.Post(
+					fmt.Sprintf("http://localhost:%d/log_connection", svr.cfg.LoggerPort),
+					"application/json",
+					bytes.NewBuffer(jsonData),
+				)
+				if err != nil {
+					log.Warn("Failed to log disconnection: %v", err)
+					return
+				}
+				defer resp.Body.Close()
+			}()
+		}
+		
 		svr.ctlManager.Del(loginMsg.RunID, ctl)
 	}()
 	return

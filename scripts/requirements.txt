@@ -1,0 +1,7 @@
+gradio
+pydantic
+plotly
+pandas 
+numpy
+pycountry
+python-dotenv

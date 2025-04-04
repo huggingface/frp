@@ -5,6 +5,7 @@
 *.pem
 *.crt
 *.key
+*.env
 
 # Folders
 _obj
@@ -37,3 +38,8 @@ dist/
 
 # Cache
 *.swp
+
+*.db
+
+connection_logger.log
+__pycache__/

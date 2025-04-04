@@ -39,6 +39,8 @@ var ErrNoRouteFound = errors.New("no route found")
 
 type HTTPReverseProxyOptions struct {
 	ResponseHeaderTimeoutS int64
+	LoggerSubdomain        string
+	LoggerPort             int
 }
 
 type HTTPReverseProxy struct {
@@ -46,6 +48,10 @@ type HTTPReverseProxy struct {
 	vhostRouter *Routers
 
 	responseHeaderTimeout time.Duration
+	
+	// Logger configuration
+	loggerSubdomain string
+	loggerPort      int
 }
 
 func NewHTTPReverseProxy(option HTTPReverseProxyOptions, vhostRouter *Routers) *HTTPReverseProxy {
@@ -55,6 +61,8 @@ func NewHTTPReverseProxy(option HTTPReverseProxyOptions, vhostRouter *Routers) *
 	rp := &HTTPReverseProxy{
 		responseHeaderTimeout: time.Duration(option.ResponseHeaderTimeoutS) * time.Second,
 		vhostRouter:           vhostRouter,
+		loggerSubdomain:       option.LoggerSubdomain,
+		loggerPort:            option.LoggerPort,
 	}
 	proxy := &httputil.ReverseProxy{
 		// Modify incoming requests by route policies.
@@ -161,6 +169,11 @@ func (rp *HTTPReverseProxy) GetHeaders(domain, location, routeByHTTPUser string)
 
 // CreateConnection create a new connection by route config
 func (rp *HTTPReverseProxy) CreateConnection(domain, location, routeByHTTPUser string, remoteAddr string) (net.Conn, error) {
+	// Check if this is the logger subdomain and if logger is configured
+	if rp.loggerSubdomain != "" && domain == rp.loggerSubdomain && rp.loggerPort > 0 {
+		return net.Dial("tcp", fmt.Sprintf("localhost:%d", rp.loggerPort))
+	}
+
 	vr, ok := rp.getVhost(domain, location, routeByHTTPUser)
 	if ok {
 		fn := vr.payload.(*RouteConfig).CreateConnFn

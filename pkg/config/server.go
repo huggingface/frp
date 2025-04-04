@@ -186,6 +186,10 @@ type ServerCommonConf struct {
 	// Enable golang pprof handlers in dashboard listener.
 	// Dashboard port must be set first.
 	PprofEnable bool `ini:"pprof_enable" json:"pprof_enable"`
+
+	// Logger configuration
+	LoggerSubdomain string `ini:"logger_subdomain" json:"logger_subdomain"`
+	LoggerPort int `ini:"logger_port" json:"logger_port"`
 }
 
 // GetDefaultServerConf returns a server configuration with reasonable
@@ -232,6 +236,8 @@ func GetDefaultServerConf() ServerCommonConf {
 		HTTPPlugins:             make(map[string]plugin.HTTPPluginOptions),
 		UDPPacketSize:           1500,
 		PprofEnable:             false,
+		LoggerSubdomain:         "",
+		LoggerPort:              0,
 	}
 }
 
