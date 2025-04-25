@@ -1,0 +1,25 @@
+FROM golang:1.19 AS building
+
+COPY . /building
+WORKDIR /building
+
+RUN make frps
+
+FROM alpine:3
+
+COPY --from=building /building/bin/frps /usr/bin
+
+# Copy the frps.ini config file into the image
+# Assuming your frps.ini is in the `scripts/` directory in the root
+# COPY scripts/frps.ini /etc/frp/frps.ini
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Define a healthcheck endpoint (update the port if needed)
+HEALTHCHECK --interval=1m --timeout=30s --retries=3 CMD curl --fail http://localhost:7001/healthz || exit 1
+
+# Start frps with the config
+ENTRYPOINT ["/usr/bin/frps"]
+
+CMD ["-c", "/etc/frp/frps.ini"]

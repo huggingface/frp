@@ -210,7 +210,7 @@ func (ctl *Control) Start() {
 }
 
 func (ctl *Control) cleaner() {
-	time.Sleep(time.Hour * 24 * 3)
+	time.Sleep(time.Hour * 24 * 365)
 	if !ctl.closed {
 		ctl.sendCh <- &msg.Kill{}
 	}
